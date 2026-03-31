@@ -157,6 +157,9 @@ def algorithm_2_vrpcc(
     Algorithm 2: nhị phân trên B, lặp Algorithm 1 cho đến khi phủ hết khách.
 
     Returns VRPCCResult chứa routes, bounds, makespan, thời gian, cận xấp xỉ.
+
+    Mỗi tuyến trong `routes` là closed tour [0,…,0]; `route_costs` / makespan
+    dùng `tour_length` (có cạnh quay về kho).
     """
     t_start = time.perf_counter()
 
@@ -229,14 +232,19 @@ def algorithm_2_vrpcc(
 
     elapsed = time.perf_counter() - t_start
 
-    # Tính chi phí từng xe và makespan
-    route_costs: list[float] = []
+    # Chuẩn hoá [0,…,0] và tính chi phí closed tour (gồm cạnh về depot)
+    norm_routes: list[list[int]] = []
     for k in range(inst.m):
         r = best_routes[k] if k < len(best_routes) else [0, 0]
         if not r or len(r) < 2:
             r = [0, 0]
+        norm_routes.append(inst.normalize_closed_tour(r))
+    best_routes = norm_routes
+
+    route_costs: list[float] = []
+    for k in range(inst.m):
         try:
-            route_costs.append(inst.tour_length(r, k))
+            route_costs.append(inst.tour_length(best_routes[k], k))
         except ValueError:
             route_costs.append(0.0)
     makespan = max(route_costs) if route_costs else 0.0

@@ -79,13 +79,29 @@ class VRPCCInstance:
         n = self.n_nodes
         return float(sum(d[i, j] for i in range(n) for j in range(i + 1, n)))
 
+    def normalize_closed_tour(self, tour: list[int]) -> list[int]:
+        """
+        Chuẩn hoá biểu diễn tuyến khép kín qua depot: [0, v1, …, vk, 0].
+
+        Mọi chi phí tuyến (makespan) trong thuật toán đều là **closed tour** — gồm cả cạnh quay về kho.
+        """
+        if not tour:
+            return [0, 0]
+        t = tour[:]
+        if t[0] != 0:
+            t = [0] + t
+        if t[-1] != 0:
+            t = t + [0]
+        return t
+
     def tour_length(self, tour: list[int], vehicle: int) -> float:
         """
-        Chi phí tuyến của một xe: tổng dist trên các cạnh liên tiếp; mỗi bước tới khách j phải thỏa u[vehicle,j].
+        Chi phí tuyến (closed tour) của một xe: tổng c_ij trên mọi cạnh liên tiếp **kể cả đoạn cuối về kho**;
+        mỗi bước tới khách j phải thỏa u[vehicle,j].
 
         Tham số:
-            tour: chuỗi đỉnh, thường khép kín qua depot, ví dụ [0, a, b, 0].
-            Nếu bắt đầu bằng kho (0) nhưng đỉnh cuối khác 0, tự cộng thêm cạnh về kho (đoạn … → 0).
+            tour: chuỗi đỉnh, ví dụ [0, a, b, 0].
+            Nếu bắt đầu bằng kho (0) nhưng đỉnh cuối khác 0, tự cộng thêm cạnh về kho (… → 0).
 
         Trả về: tổng chi phí; tour ngắn hơn 2 đỉnh → 0.
 

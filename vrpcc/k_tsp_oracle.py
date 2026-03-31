@@ -1,5 +1,5 @@
 """
-Oracle O(Y, B, vehicle) cho MCG-VRP — thuật toán xấp xỉ k-TSP.
+Oracle O(Y, B, vehicle) cho MCG-VRP — bicriteria k-TSP (mục 3 bài báo).
 
 ══════════════════════════════════════════════════════════════
  ORACLE — THEO MỤC 3 BÀI BÁO (Corollary 4)
@@ -13,23 +13,28 @@ Oracle O(Y, B, vehicle) cho MCG-VRP — thuật toán xấp xỉ k-TSP.
 
  ┌─ Output ──────────────────────────────────────────────────┐
  │  tour : tuyến khép kín [0, v1, …, vk, 0] (depot → … →   │
- │         depot) thoả cost(tour) ≤ β·B                     │
+ │         depot). Chi phí = tổng cạnh **kể cả về kho**.    │
  │  vis  : tập khách thực sự nằm trên tuyến                 │
  └───────────────────────────────────────────────────────────┘
 
- ┌─ Method ──────────────────────────────────────────────────┐
- │  Bicriteria k-TSP:                                       │
- │    "Tối đa hoá k (số khách) sao cho cost ≤ β·B"         │
+ ┌─ Method (theo paper mục 4 / Corollary 4) ─────────────────┐
+ │  Bicriteria k-TSP: tối đa hoá |coverage| sao cho         │
+ │    cost(closed tour) ≤ β·B, với β = 5.                   │
  │                                                          │
- │  Paper mục 4 dùng β = 5 (5-approx k-TSP từ [19]).       │
+ │  Bài báo viết: dùng thuật toán xấp xỉ k-TSP hệ số 5 từ   │
+ │  [19] làm oracle O. Tham chiếu [19] là Garg (FOCS’96):   │
+ │  xấp xỉ **k-MST** (cây nhỏ nhất phủ k đỉnh). Trong       │
+ │  thực nghiệm, khung chuẩn là: cây (MST) → tour (shortcut │
+ │  kiểu double-tree/DFS) + tối ưu cục bộ; **β=5** là hệ   │
+ │  số bicriteria như bài báo.                              │
  │                                                          │
  │  Cài đặt:                                                │
- │    |W| ≤ 8 : exact (tổ hợp + hoán vị)                   │
- │    |W| > 8 : Prim MST → tree DP (k-subtree tối ưu)      │
- │              → DFS shortcut → 2-opt                      │
+ │    |W| ≤ 8 : exact (tổ hợp + hoán vị), cost = tour khép  │
+ │    |W| > 8 : Prim MST → tree DP (k-subtree) → DFS       │
+ │              shortcut → 2-opt; mọi cost qua tour_length  │
  │                                                          │
- │  Binary search trên tree cost (đơn điệu) để tìm nhanh   │
- │  k lớn nhất, rồi kiểm tra tour cost thực tế quanh đó.   │
+ │  Binary search trên tree cost; kiểm tra tour thực tế     │
+ │  (gồm cạnh về depot).                                    │
  └───────────────────────────────────────────────────────────┘
 """
 
@@ -59,11 +64,12 @@ def _close_tour(tour: Tour) -> Tour:
     return t
 
 
-def _tour_cost(inst: VRPCCInstance, tour: Tour) -> float:
+def _closed_tour_cost(inst: VRPCCInstance, vehicle: int, tour: Tour) -> float:
+    """Chi phí closed tour (depot → … → depot), thống nhất với `VRPCCInstance.tour_length`."""
     t = _close_tour(tour)
     if len(t) < 2:
         return 0.0
-    return float(sum(inst.dist[t[i], t[i + 1]] for i in range(len(t) - 1)))
+    return float(inst.tour_length(t, vehicle))
 
 
 # ── Exact brute-force (|W| ≤ 8) ──────────────────────────────
@@ -79,7 +85,7 @@ def _exact_best_tour(
         if not all(inst.u[vehicle, p] == 1 for p in perm):
             continue
         seq: Tour = [0] + list(perm) + [0]
-        c = _tour_cost(inst, seq)
+        c = _closed_tour_cost(inst, vehicle, seq)
         if c < best_c:
             best_c = c
             best_tour = seq
@@ -266,12 +272,12 @@ def _subtree_tour(
 
 # ── 2-opt ─────────────────────────────────────────────────────
 
-def _two_opt(inst: VRPCCInstance, tour: Tour) -> Tour:
+def _two_opt(inst: VRPCCInstance, vehicle: int, tour: Tour) -> Tour:
     tour = _close_tour(tour)
     if len(tour) < 5:
         return tour
     best = tour[:]
-    best_c = _tour_cost(inst, best)
+    best_c = _closed_tour_cost(inst, vehicle, best)
     inner = tour[1:-1]
     n = len(inner)
     improved = True
@@ -281,7 +287,7 @@ def _two_opt(inst: VRPCCInstance, tour: Tour) -> Tour:
             for j in range(i + 1, n):
                 cand_inner = inner[:i] + list(reversed(inner[i : j + 1])) + inner[j + 1 :]
                 cand = [0] + cand_inner + [0]
-                c = _tour_cost(inst, cand)
+                c = _closed_tour_cost(inst, vehicle, cand)
                 if c + 1e-9 < best_c:
                     best_c = c
                     best = cand
@@ -307,10 +313,11 @@ def oracle_k_tsp(
 ) -> tuple[Tour, set[int]]:
     """
     Oracle bicriteria (mục 3):
-      max |coverage| subject to cost(tour) ≤ β·B.
+      max |coverage| subject to cost(closed tour) ≤ β·B.
 
+    `cost` luôn là chi phí tour khép kín qua depot (xem `VRPCCInstance.tour_length`).
     Binary search trên tree cost (đơn điệu) để tìm k lớn nhất nhanh,
-    rồi xác nhận bằng tour cost thực tế.
+    rồi xác nhận bằng tour cost thực tế (gồm cạnh về kho).
     """
     W = sorted(j for j in Y if j >= 1 and inst.u[vehicle, j] == 1)
     if not W or budget <= 0:
@@ -322,8 +329,8 @@ def oracle_k_tsp(
     if len(W) <= EXACT_THRESHOLD:
         for k in range(len(W), 0, -1):
             t, c = _exact_k_subset(inst, vehicle, W, k)
-            t = _two_opt(inst, t)
-            c = _tour_cost(inst, t)
+            t = _two_opt(inst, vehicle, t)
+            c = _closed_tour_cost(inst, vehicle, t)
             if c <= threshold:
                 return _close_tour(t), set(t) - {0}
         return [0, 0], set()
@@ -355,13 +362,13 @@ def oracle_k_tsp(
             continue
         nodes = _reconstruct(inst.dist, 0, children, dp, j)
         tour = _subtree_tour(0, nodes, children)
-        cost = _tour_cost(inst, tour)
+        cost = _closed_tour_cost(inst, vehicle, tour)
         if cost <= threshold:
-            tour = _two_opt(inst, tour)
+            tour = _two_opt(inst, vehicle, tour)
             return _close_tour(tour), set(tour) - {0}
         if cost <= 2.0 * threshold:
-            tour = _two_opt(inst, tour)
-            cost = _tour_cost(inst, tour)
+            tour = _two_opt(inst, vehicle, tour)
+            cost = _closed_tour_cost(inst, vehicle, tour)
             if cost <= threshold:
                 return _close_tour(tour), set(tour) - {0}
 
