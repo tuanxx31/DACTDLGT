@@ -30,17 +30,15 @@ Oracle O(Y, B, vehicle) cho MCG-VRP — bicriteria k-TSP (mục 3 bài báo).
  │                                                          │
  │  Cài đặt:                                                │
  │    |W| ≤ 8 : exact (tổ hợp + hoán vị), cost = tour khép  │
- │    |W| > 8 : Prim MST → tree DP (k-subtree) → DFS       │
- │              shortcut → 2-opt; mọi cost qua tour_length  │
- │                                                          │
- │  Binary search trên tree cost; kiểm tra tour thực tế     │
- │  (gồm cạnh về depot).                                    │
+ │    |W| > 8 : greedy từ depot — mỗi bước thêm khách j sao  │
+ │              cho tăng chi phí tour khép kín (kể cả về    │
+ │              kho) là nhỏ nhất, dừng khi không còn j    │
+ │              nào thỏa cost ≤ β·B; sau đó 2-opt.          │
  └───────────────────────────────────────────────────────────┘
 """
 
 from __future__ import annotations
 
-import heapq
 import itertools
 from typing import TYPE_CHECKING, Callable
 
@@ -107,167 +105,59 @@ def _exact_k_subset(
     return best_tour, float(best_c)
 
 
-# ── Prim MST ─────────────────────────────────────────────────
-
-def _prim_mst(
-    dist: np.ndarray, root: int, nodes: list[int],
-) -> dict[int, int]:
-    all_nodes = [root] + [v for v in nodes if v != root]
-    if len(all_nodes) <= 1:
-        return {}
-    in_tree = {root}
-    parent: dict[int, int] = {}
-    pq: list[tuple[float, int, int]] = []
-    for v in all_nodes:
-        if v != root:
-            heapq.heappush(pq, (float(dist[root, v]), v, root))
-    while pq and len(in_tree) < len(all_nodes):
-        cost, v, p = heapq.heappop(pq)
-        if v in in_tree:
-            continue
-        in_tree.add(v)
-        parent[v] = p
-        for w in all_nodes:
-            if w not in in_tree:
-                heapq.heappush(pq, (float(dist[v, w]), w, v))
-    return parent
+# ── Greedy (|W| lớn): depot → thêm khách tăng cost khép kín ít nhất ──
 
 
-def _build_children(
-    parent: dict[int, int], root: int, dist: np.ndarray,
-) -> dict[int, list[int]]:
-    all_nodes = {root} | set(parent.keys())
-    children: dict[int, list[int]] = {v: [] for v in all_nodes}
-    for v, p in parent.items():
-        children[p].append(v)
-    for v in all_nodes:
-        children[v].sort(key=lambda c: dist[v, c])
-    return children
-
-
-# ── Tree DP ───────────────────────────────────────────────────
-
-def _tree_dp(
-    dist: np.ndarray, root: int, children: dict[int, list[int]],
-) -> dict[int, dict[int, float]]:
-    """dp[v][j] = chi phí cạnh nhỏ nhất cây con j đỉnh rooted tại v."""
-    dp: dict[int, dict[int, float]] = {}
-    post_order: list[int] = []
-    stack: list[tuple[int, bool]] = [(root, False)]
-    while stack:
-        v, done = stack.pop()
-        if done:
-            post_order.append(v)
-        else:
-            stack.append((v, True))
-            for c in reversed(children[v]):
-                stack.append((c, False))
-    for v in post_order:
-        cur: dict[int, float] = {1: 0.0}
-        for c in children[v]:
-            ec = float(dist[v, c])
-            merged: dict[int, float] = {}
-            for j1, c1 in cur.items():
-                if j1 not in merged or c1 < merged[j1]:
-                    merged[j1] = c1
-                for j2, c2 in dp[c].items():
-                    j = j1 + j2
-                    total = c1 + c2 + ec
-                    if j not in merged or total < merged[j]:
-                        merged[j] = total
-            cur = merged
-        dp[v] = cur
-    return dp
-
-
-# ── Reconstruct k-subtree ────────────────────────────────────
-
-def _reconstruct(
-    dist: np.ndarray, root: int,
-    children: dict[int, list[int]],
-    dp: dict[int, dict[int, float]],
-    target_j: int,
-) -> set[int]:
-    def _find(v: int, j: int) -> set[int]:
-        if j <= 0:
-            return set()
-        if j == 1:
-            return {v}
-        result = {v}
-        ch = children[v]
-        if not ch:
-            return result
-        partial: list[dict[int, float]] = [{0: 0.0}]
-        for idx, c in enumerate(ch):
-            ec = float(dist[v, c])
-            prev = partial[idx]
-            new_p: dict[int, float] = {}
-            for j1, c1 in prev.items():
-                if j1 not in new_p or c1 < new_p[j1]:
-                    new_p[j1] = c1
-                for j2, c2 in dp[c].items():
-                    jj = j1 + j2
-                    tt = c1 + c2 + ec
-                    if jj not in new_p or tt < new_p[jj]:
-                        new_p[jj] = tt
-            partial.append(new_p)
-        remaining = j - 1
-        for idx in range(len(ch) - 1, -1, -1):
-            c = ch[idx]
-            ec = float(dist[v, c])
-            target_cost = partial[idx + 1].get(remaining, float("inf"))
-            skip_cost = partial[idx].get(remaining, float("inf"))
-            if abs(skip_cost - target_cost) < 1e-9:
-                continue
-            for j2 in sorted(dp[c].keys(), reverse=True):
-                j1 = remaining - j2
-                if j1 < 0:
-                    continue
-                prev_cost = partial[idx].get(j1, float("inf"))
-                total = prev_cost + dp[c][j2] + ec
-                if abs(total - target_cost) < 1e-9:
-                    result.update(_find(c, j2))
-                    remaining = j1
-                    break
-        return result
-
-    return _find(root, target_j)
-
-
-# ── DFS shortcut → tour ──────────────────────────────────────
-
-def _subtree_tour(
-    root: int, included: set[int],
-    children: dict[int, list[int]],
+def _greedy_min_increment_tour(
+    inst: VRPCCInstance,
+    vehicle: int,
+    W: list[int],
+    threshold: float,
 ) -> Tour:
-    has_inc: dict[int, bool] = {}
+    """
+    Bắt đầu tại depot (0). Lặp: trong các khách còn lại (thỏa u), chọn j
+    sao cho **tăng** chi phí tour khép kín là nhỏ nhất:
 
-    def _mark(v: int) -> bool:
-        r = v in included
-        for c in children[v]:
-            if _mark(c):
-                r = True
-        has_inc[v] = r
-        return r
+        Δ(j) = c(cur,j) + c(j,0) − c(cur,0)
 
-    _mark(root)
-    tour: list[int] = []
+    (so với việc đi thẳng từ cur về kho). Chỉ thêm j nếu chi phí tour đầy đủ
+    0 → … → j → 0 không vượt `threshold` (đã gồm cạnh về depot).
 
-    def _dfs(v: int) -> None:
-        if v in included:
-            tour.append(v)
-        for c in children[v]:
-            if has_inc.get(c, False):
-                _dfs(c)
+    Dừng khi không còn j nào thỏa ngân sách.
+    """
+    d = inst.dist
+    remaining = set(W)
+    tour: Tour = [0]
+    cur = 0
+    path_cost = 0.0
 
-    _dfs(root)
-    if not tour:
-        return [0, 0]
-    if tour[0] != 0:
-        tour.insert(0, 0)
-    if tour[-1] != 0:
-        tour.append(0)
-    return tour
+    while remaining:
+        best_j: int | None = None
+        best_delta = float("inf")
+        for j in sorted(remaining):
+            if inst.u[vehicle, j] != 1:
+                continue
+            c_cur_j = float(d[cur, j])
+            c_j0 = float(d[j, 0])
+            c_cur0 = float(d[cur, 0])
+            closed = path_cost + c_cur_j + c_j0
+            if closed > threshold + 1e-9:
+                continue
+            delta = c_cur_j + c_j0 - c_cur0
+            if delta < best_delta - 1e-12:
+                best_delta = delta
+                best_j = j
+
+        if best_j is None:
+            break
+
+        tour.append(best_j)
+        path_cost += float(d[cur, best_j])
+        cur = best_j
+        remaining.remove(best_j)
+
+    tour.append(0)
+    return tour if len(tour) >= 2 else [0, 0]
 
 
 # ── 2-opt ─────────────────────────────────────────────────────
@@ -316,8 +206,7 @@ def oracle_k_tsp(
       max |coverage| subject to cost(closed tour) ≤ β·B.
 
     `cost` luôn là chi phí tour khép kín qua depot (xem `VRPCCInstance.tour_length`).
-    Binary search trên tree cost (đơn điệu) để tìm k lớn nhất nhanh,
-    rồi xác nhận bằng tour cost thực tế (gồm cạnh về kho).
+    Với |W| lớn: greedy từ depot, mỗi bước kiểm tra ngân sách **kể cả về kho**.
     """
     W = sorted(j for j in Y if j >= 1 and inst.u[vehicle, j] == 1)
     if not W or budget <= 0:
@@ -335,43 +224,12 @@ def oracle_k_tsp(
                 return _close_tour(t), set(t) - {0}
         return [0, 0], set()
 
-    # ── Large: MST + tree DP ──
-    parent = _prim_mst(inst.dist, 0, W)
-    children = _build_children(parent, 0, inst.dist)
-    dp = _tree_dp(inst.dist, 0, children)
-
-    # Phase 1: binary search trên tree cost (đơn điệu tăng theo k)
-    lo_k, hi_k = 0, len(W)
-    while lo_k < hi_k:
-        mid = (lo_k + hi_k + 1) // 2
-        j = mid + 1
-        if j in dp[0] and dp[0][j] <= threshold:
-            lo_k = mid
-        else:
-            hi_k = mid - 1
-    k_tree_max = lo_k
-
-    if k_tree_max == 0:
-        return [0, 0], set()
-
-    # Phase 2: kiểm tra tour cost thực tế quanh k_tree_max
-    search_hi = min(len(W), k_tree_max + 3)
-    for k in range(search_hi, 0, -1):
-        j = k + 1
-        if j not in dp[0]:
-            continue
-        nodes = _reconstruct(inst.dist, 0, children, dp, j)
-        tour = _subtree_tour(0, nodes, children)
-        cost = _closed_tour_cost(inst, vehicle, tour)
-        if cost <= threshold:
-            tour = _two_opt(inst, vehicle, tour)
-            return _close_tour(tour), set(tour) - {0}
-        if cost <= 2.0 * threshold:
-            tour = _two_opt(inst, vehicle, tour)
-            cost = _closed_tour_cost(inst, vehicle, tour)
-            if cost <= threshold:
-                return _close_tour(tour), set(tour) - {0}
-
+    # ── Large: greedy (min tăng cost tour khép kín) + 2-opt ──
+    tour = _greedy_min_increment_tour(inst, vehicle, W, threshold)
+    tour = _two_opt(inst, vehicle, tour)
+    cost = _closed_tour_cost(inst, vehicle, tour)
+    if cost <= threshold:
+        return _close_tour(tour), set(tour) - {0}
     return [0, 0], set()
 
 

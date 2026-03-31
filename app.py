@@ -64,8 +64,13 @@ def _print_result(
     print(f"  ───────────────────────────")
     print(f"  Cận dưới cuối  l     = {result.B_lower:.6f}")
     print(f"  Cận trên cuối  u     = {result.B_upper:.6f}")
-    print(f"  B tốt nhất (= u)    = {result.B_upper:.6f}")
+    print(f"  B* oracle (= u)      = {result.B_upper:.6f}")
+    print(f"  Ngưỡng oracle β·B*   = {result.beta * result.B_upper:.6f}")
     print(f"  Khoảng u - l         = {result.B_upper - result.B_lower:.6g}")
+    print(
+        "  Ghi chú: B* là ngân sách cho mỗi lời gọi O(Y,B,i) trong một wave; "
+        "route cuối là nối nhiều wave nên có thể > β·B*."
+    )
 
     print(f"\n  Cận xấp xỉ lý thuyết (Lemma 5)")
     print(f"  ─────────────────────────────────────")
