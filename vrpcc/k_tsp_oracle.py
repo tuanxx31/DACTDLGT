@@ -26,13 +26,16 @@ def _tour_cost(inst: VRPCCInstance, tour: Tour) -> float:
 
     Tham số:
         inst: instance (lấy ma trận dist).
-        tour: [v0, v1, ..., vk].
+        tour: [v0, v1, ..., vk]. Nếu v0==0 (xuất phát kho) và vk!=0, cộng thêm cạnh vk→0.
 
-    Trả về: tổng dist[vi, vi+1]; tour ngắn → 0.
+    Trả về: tổng dist[vi, vi+1] (+ đoạn về kho nếu cần); tour ngắn → 0.
     """
     if len(tour) < 2:
         return 0.0
-    return float(sum(inst.dist[tour[i], tour[i + 1]] for i in range(len(tour) - 1)))
+    s = float(sum(inst.dist[tour[i], tour[i + 1]] for i in range(len(tour) - 1)))
+    if tour[0] == 0 and tour[-1] != 0:
+        s += float(inst.dist[tour[-1], 0])
+    return s
 
 
 def _exact_best_tour_on_subset(inst: VRPCCInstance, vehicle: int, subset: list[int]) -> tuple[Tour, float]:

@@ -85,7 +85,7 @@ class VRPCCInstance:
 
         Tham số:
             tour: chuỗi đỉnh, thường khép kín qua depot, ví dụ [0, a, b, 0].
-            vehicle: chỉ số xe (áp dụng ma trận tương thích u).
+            Nếu bắt đầu bằng kho (0) nhưng đỉnh cuối khác 0, tự cộng thêm cạnh về kho (đoạn … → 0).
 
         Trả về: tổng chi phí; tour ngắn hơn 2 đỉnh → 0.
 
@@ -98,6 +98,8 @@ class VRPCCInstance:
             if self.u[vehicle, b] == 0 and b != 0:
                 raise ValueError(f"vehicle {vehicle} cannot visit {b}")
             s += float(self.dist[a, b])
+        if tour[0] == 0 and tour[-1] != 0:
+            s += float(self.dist[tour[-1], 0])
         return s
 
     def makespan(self, routes: list[list[int]]) -> float:

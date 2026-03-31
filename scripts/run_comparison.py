@@ -21,21 +21,34 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from vrpcc.approx_algorithm import algorithm_2_vrpcc
+from vrpcc.approx_observer import NULL_OBSERVER
+from vrpcc.approx_observer_logging import (
+    LoggingApproxObserver,
+    configure_approx_trace_file,
+)
 from vrpcc.instance import VRPCCInstance
 from vrpcc.k_tsp_oracle import make_oracle
 from vrpcc.local_search import local_search
 from vrpcc.plotting import plot_from_results_list, plot_routes_map
 
 
-def _run_approx(inst: VRPCCInstance, beta: float, use_ls: bool) -> tuple[list[list[int]], float, float]:
+def _run_approx(
+    inst: VRPCCInstance,
+    beta: float,
+    use_ls: bool,
+    *,
+    algorithm_trace: bool = True,
+) -> tuple[list[list[int]], float, float, float]:
     oracle = make_oracle(inst, beta=beta)
+    observer = LoggingApproxObserver() if algorithm_trace else NULL_OBSERVER
     t0 = time.perf_counter()
-    routes = algorithm_2_vrpcc(inst, oracle, eps=1e-3)
+    observer.on_run_start(inst.name or "instance")
+    routes, B = algorithm_2_vrpcc(inst, oracle, eps=1e-3, observer=observer)
     if use_ls:
         routes = local_search(inst, routes)
     elapsed = time.perf_counter() - t0
     obj = inst.makespan(routes)
-    return routes, elapsed, obj
+    return routes, elapsed, obj, B
 
 
 def main() -> None:
@@ -71,14 +84,33 @@ def main() -> None:
         action="store_true",
         help="Tắt mục 4 (2-opt + relocation sau Algorithm 2); mặc định vẫn chạy local search",
     )
-    ap.add_argument("--out-dir", type=Path, default=Path("output_runs"), help="Thư mục kết quả + hình")
+    ap.add_argument("--out-dir", type=Path, default=Path("output_runs"), help="Thư mục kết quả + hình + log trace")
+    ap.add_argument(
+        "--log-file",
+        type=Path,
+        default=None,
+        help="File log chi tiết thuật toán (mặc định: OUT_DIR/approx_algorithm.log)",
+    )
+    ap.add_argument(
+        "--no-algorithm-log",
+        action="store_true",
+        help="Tắt ghi trace nhị phân / tham lam",
+    )
     ap.add_argument("--verbose-mip", action="store_true")
     ap.add_argument(
         "--skip-mip",
         action="store_true",
         help="Chỉ chạy thuật toán bài báo (approx + local search); không gọi Gurobi / MIP",
     )
+    ap.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Bật trace file ngay cả khi có --no-algorithm-log (tương thích app.py)",
+    )
     args = ap.parse_args()
+
+    algorithm_trace = (not args.no_algorithm_log) or args.verbose
 
     if args.instance:
         paths = args.instance
@@ -91,6 +123,11 @@ def main() -> None:
         sys.exit(1)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
+    if algorithm_trace:
+        log_path = args.log_file if args.log_file is not None else args.out_dir / "approx_algorithm.log"
+        configure_approx_trace_file(log_path, mode="w")
+        print(f"Trace thuật toán → {log_path.resolve()}", flush=True)
+
     results: list[dict] = []
     use_ls = not args.no_local_search
 
@@ -100,7 +137,12 @@ def main() -> None:
         inst = VRPCCInstance.load_json(p)
         name = inst.name or p.stem
 
-        approx_routes, approx_time, approx_obj = _run_approx(inst, args.beta, use_ls)
+        approx_routes, approx_time, approx_obj, B = _run_approx(
+            inst,
+            args.beta,
+            use_ls,
+            algorithm_trace=algorithm_trace,
+        )
 
         if args.skip_mip:
             row = {
@@ -108,6 +150,7 @@ def main() -> None:
                 "file": str(p),
                 "approx_obj": approx_obj,
                 "approx_time": approx_time,
+                "B": B,
                 "mip_skipped": True,
             }
             results.append(row)
@@ -145,6 +188,7 @@ def main() -> None:
             "file": str(p),
             "approx_obj": approx_obj,
             "approx_time": approx_time,
+            "B": B,
             "ratio_obj_lb2": (approx_obj / lb2) if lb2 and lb2 > 0 else None,
             "ratio_obj_ub2": (approx_obj / ub2) if ub2 and ub2 > 0 else None,
             "mip_status_1": r1.status,

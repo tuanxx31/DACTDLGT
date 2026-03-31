@@ -17,6 +17,11 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from vrpcc.approx_algorithm import algorithm_2_vrpcc
+from vrpcc.approx_observer import NULL_OBSERVER
+from vrpcc.approx_observer_logging import (
+    LoggingApproxObserver,
+    configure_approx_trace_file,
+)
 from vrpcc.instance import VRPCCInstance
 from vrpcc.k_tsp_oracle import make_oracle
 from vrpcc.local_search import local_search
@@ -29,7 +34,8 @@ def run_paper_algorithm(
     beta: float,
     use_local_search: bool,
     eps: float,
-) -> tuple[list[list[int]], float, float]:
+    algorithm_trace: bool = True,
+) -> tuple[list[list[int]], float, float, float]:
     """
     Chạy pipeline trên một instance: heuristic oracle → Algorithm 2 → (tuỳ chọn) local search.
 
@@ -37,21 +43,25 @@ def run_paper_algorithm(
         - routes: danh sách tuyến theo xe, mỗi tuyến là chuỗi đỉnh khép kín qua depot (0).
         - elapsed: thời gian chạy (giây), gồm cả local search nếu bật.
         - obj: giá trị makespan (max chi phí tuyến trên các xe).
+        - B: ngân sách (cận trên khả thi) sau nhị phân trong Algorithm 2.
 
     Tham số:
         inst: bài toán VRPCC (ma trận khoảng cách, ma trận tương thích u).
         beta: hệ số bicriteria (mặc định 2 như lý thuyết paper; chi phí oracle ≤ beta × B khi có tuyến khả thi).
         use_local_search: True thì áp dụng mục 4 (2-opt theo đoạn + relocation).
         eps: độ chính xác binary search trên B trong Algorithm 2 (dừng khi upper−lower < eps).
+        algorithm_trace: True thì ghi trace (file đã cấu hình bằng `configure_approx_trace_file` ở CLI).
     """
     oracle = make_oracle(inst, beta=beta)
+    observer = LoggingApproxObserver() if algorithm_trace else NULL_OBSERVER
     t0 = time.perf_counter()
-    routes = algorithm_2_vrpcc(inst, oracle, eps=eps)
+    observer.on_run_start(inst.name or "instance")
+    routes, B = algorithm_2_vrpcc(inst, oracle, eps=eps, observer=observer)
     if use_local_search:
         routes = local_search(inst, routes)
     elapsed = time.perf_counter() - t0
     obj = inst.makespan(routes)
-    return routes, elapsed, obj
+    return routes, elapsed, obj, B
 
 
 def main() -> None:
@@ -82,9 +92,28 @@ def main() -> None:
         help="Tắt local search sau Algorithm 2",
     )
     ap.add_argument("--eps", type=float, default=1e-3, help="Ngưỡng binary search trên B")
-    ap.add_argument("--out-dir", type=Path, default=Path("output_runs"), help="Kết quả JSON + hình")
+    ap.add_argument("--out-dir", type=Path, default=Path("output_runs"), help="Kết quả JSON + hình + log trace")
     ap.add_argument("--no-plots", action="store_true", help="Không vẽ PNG")
+    ap.add_argument(
+        "--log-file",
+        type=Path,
+        default=None,
+        help="File log chi tiết thuật toán (mặc định: OUT_DIR/approx_algorithm.log)",
+    )
+    ap.add_argument(
+        "--no-algorithm-log",
+        action="store_true",
+        help="Tắt ghi trace nhị phân / tham lam (chỉ còn JSON ra stdout)",
+    )
+    ap.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Luôn ghi trace (ghi đè --no-algorithm-log nếu có)",
+    )
     args = ap.parse_args()
+
+    algorithm_trace = (not args.no_algorithm_log) or args.verbose
 
     if args.instance:
         paths = args.instance
@@ -97,6 +126,12 @@ def main() -> None:
         sys.exit(1)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
+    log_path: Path | None = None
+    if algorithm_trace:
+        log_path = args.log_file if args.log_file is not None else args.out_dir / "approx_algorithm.log"
+        configure_approx_trace_file(log_path, mode="w")
+        print(f"Trace thuật toán (nhị phân + tham lam) → {log_path.resolve()}", flush=True)
+
     results: list[dict] = []
     use_ls = not args.no_local_search
 
@@ -105,17 +140,19 @@ def main() -> None:
             continue
         inst = VRPCCInstance.load_json(p)
         name = inst.name or p.stem
-        routes, elapsed, obj = run_paper_algorithm(
+        routes, elapsed, obj, B = run_paper_algorithm(
             inst,
             beta=args.beta,
             use_local_search=use_ls,
             eps=args.eps,
+            algorithm_trace=algorithm_trace,
         )
         row = {
             "name": name,
             "file": str(p),
             "approx_obj": obj,
             "approx_time": elapsed,
+            "B": B,
             "beta": args.beta,
             "local_search": use_ls,
         }
