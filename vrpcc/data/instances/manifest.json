@@ -30,5 +30,13 @@
     "m": 4,
     "tight": false,
     "seed": 4
+  },
+  {
+    "file": "toy-n4-k2-hand.json",
+    "kind": "toy",
+    "n": 4,
+    "m": 2,
+    "tight": null,
+    "seed": null
   }
 ]
