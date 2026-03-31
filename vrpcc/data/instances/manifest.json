@@ -1,26 +1,34 @@
 [
   {
-    "file": "R-n6-k2-tight-s1.json",
+    "file": "R-n15-k3-tight-s1.json",
     "kind": "R",
-    "n": 6,
-    "m": 2,
+    "n": 15,
+    "m": 3,
     "tight": true,
     "seed": 1
   },
   {
-    "file": "R-n6-k2-relaxed-s2.json",
+    "file": "R-n15-k3-relaxed-s2.json",
     "kind": "R",
-    "n": 6,
-    "m": 2,
+    "n": 15,
+    "m": 3,
     "tight": false,
     "seed": 2
   },
   {
-    "file": "C-n8-k3-tight-s3.json",
+    "file": "C-n16-k4-tight-s3.json",
     "kind": "C",
-    "n": 8,
-    "m": 3,
+    "n": 16,
+    "m": 4,
     "tight": true,
     "seed": 3
+  },
+  {
+    "file": "RC-n14-k4-relaxed-s4.json",
+    "kind": "RC",
+    "n": 14,
+    "m": 4,
+    "tight": false,
+    "seed": 4
   }
 ]

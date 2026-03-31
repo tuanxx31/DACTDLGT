@@ -60,7 +60,12 @@ def main() -> None:
         default=0.0,
         help="Time limit MIP lần 2 (giây); mặc định 0=bỏ qua. Đặt >0 và khác lần 1 để giống bài báo (10p+2h)",
     )
-    ap.add_argument("--beta", type=float, default=3.0, help="Hệ số bicriteria oracle (bài: ~3 theo Garg [19])")
+    ap.add_argument(
+        "--beta",
+        type=float,
+        default=2.0,
+        help="Hệ số bicriteria oracle (paper lý thuyết beta=2; implementation heuristic)",
+    )
     ap.add_argument(
         "--no-local-search",
         action="store_true",

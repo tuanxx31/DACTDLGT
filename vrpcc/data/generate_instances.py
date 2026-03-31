@@ -96,11 +96,12 @@ def build_instance(
     return VRPCCInstance(dist=dist, u=u, name=nm, metadata=meta, coords=coords)
 
 
-# Mặc định: ít instance, n nhỏ — cùng run_comparison (MIP ~40s/instance, 1 lần) gói ~≤2 phút.
+# Mặc định: vừa phải — mỗi instance ≥15 đỉnh (depot + khách); run_comparison vẫn khả thi.
 QUICK_SPECS: list[tuple[str, int, int, bool, int]] = [
-    ("R", 6, 2, True, 1),
-    ("R", 6, 2, False, 2),
-    ("C", 8, 3, True, 3),
+    ("R", 15, 3, True, 1),
+    ("R", 15, 3, False, 2),
+    ("C", 16, 4, True, 3),
+    ("RC", 14, 4, False, 4),
 ]
 
 # Bộ lớn gần bài báo (chạy lâu).
