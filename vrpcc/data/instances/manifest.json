@@ -1,0 +1,26 @@
+[
+  {
+    "file": "R-n6-k2-tight-s1.json",
+    "kind": "R",
+    "n": 6,
+    "m": 2,
+    "tight": true,
+    "seed": 1
+  },
+  {
+    "file": "R-n6-k2-relaxed-s2.json",
+    "kind": "R",
+    "n": 6,
+    "m": 2,
+    "tight": false,
+    "seed": 2
+  },
+  {
+    "file": "C-n8-k3-tight-s3.json",
+    "kind": "C",
+    "n": 8,
+    "m": 3,
+    "tight": true,
+    "seed": 3
+  }
+]
