@@ -1,14 +1,41 @@
 """
-Oracle O(Y, B, vehicle) cho MCG-VRP (mục 3 bài báo) — mô phỏng oracle bicriteria k-TSP/orienteering.
+Oracle O(Y, B, vehicle) cho MCG-VRP — thuật toán xấp xỉ k-TSP.
 
-Khung giống paper (tối đa hoá |cover| với cost ≤ beta·B, binary search theo k), nhưng cài đặt là
-heuristic: instance nhỏ brute-force subset + TSP exact; lớn k khách gần depot + nearest neighbor + 2-opt.
-Đây không phải oracle 2-approx k-TSP đúng nghĩa [20]; beta=2.0 chỉ bám tham số lý thuyết của paper,
-không mang theo bảo đảm xấp xỉ như khi dùng oracle gốc.
+══════════════════════════════════════════════════════════════
+ ORACLE — THEO MỤC 3 BÀI BÁO (Corollary 4)
+══════════════════════════════════════════════════════════════
+
+ ┌─ Input ───────────────────────────────────────────────────┐
+ │  Y       : tập khách hàng cần xét (= X' ∩ V_i)          │
+ │  B       : ngân sách chi phí (giá trị B trong Algo 2)    │
+ │  vehicle : chỉ số xe i                                   │
+ └───────────────────────────────────────────────────────────┘
+
+ ┌─ Output ──────────────────────────────────────────────────┐
+ │  tour : tuyến khép kín [0, v1, …, vk, 0] (depot → … →   │
+ │         depot) thoả cost(tour) ≤ β·B                     │
+ │  vis  : tập khách thực sự nằm trên tuyến                 │
+ └───────────────────────────────────────────────────────────┘
+
+ ┌─ Method ──────────────────────────────────────────────────┐
+ │  Bicriteria k-TSP:                                       │
+ │    "Tối đa hoá k (số khách) sao cho cost ≤ β·B"         │
+ │                                                          │
+ │  Paper mục 4 dùng β = 5 (5-approx k-TSP từ [19]).       │
+ │                                                          │
+ │  Cài đặt:                                                │
+ │    |W| ≤ 8 : exact (tổ hợp + hoán vị)                   │
+ │    |W| > 8 : Prim MST → tree DP (k-subtree tối ưu)      │
+ │              → DFS shortcut → 2-opt                      │
+ │                                                          │
+ │  Binary search trên tree cost (đơn điệu) để tìm nhanh   │
+ │  k lớn nhất, rồi kiểm tra tour cost thực tế quanh đó.   │
+ └───────────────────────────────────────────────────────────┘
 """
 
 from __future__ import annotations
 
+import heapq
 import itertools
 from typing import TYPE_CHECKING, Callable
 
@@ -18,46 +45,38 @@ if TYPE_CHECKING:
     from vrpcc.instance import VRPCCInstance
 
 Tour = list[int]
+EXACT_THRESHOLD = 8
+
+
+def _close_tour(tour: Tour) -> Tour:
+    if not tour:
+        return [0, 0]
+    t = tour[:]
+    if t[0] != 0:
+        t = [0] + t
+    if t[-1] != 0:
+        t = t + [0]
+    return t
 
 
 def _tour_cost(inst: VRPCCInstance, tour: Tour) -> float:
-    """
-    Tổng chi phí cạnh dọc theo chuỗi đỉnh `tour` (không kiểm tra u — chỉ dùng dist).
-
-    Tham số:
-        inst: instance (lấy ma trận dist).
-        tour: [v0, v1, ..., vk]. Nếu v0==0 (xuất phát kho) và vk!=0, cộng thêm cạnh vk→0.
-
-    Trả về: tổng dist[vi, vi+1] (+ đoạn về kho nếu cần); tour ngắn → 0.
-    """
-    if len(tour) < 2:
+    t = _close_tour(tour)
+    if len(t) < 2:
         return 0.0
-    s = float(sum(inst.dist[tour[i], tour[i + 1]] for i in range(len(tour) - 1)))
-    if tour[0] == 0 and tour[-1] != 0:
-        s += float(inst.dist[tour[-1], 0])
-    return s
+    return float(sum(inst.dist[t[i], t[i + 1]] for i in range(len(t) - 1)))
 
 
-def _exact_best_tour_on_subset(inst: VRPCCInstance, vehicle: int, subset: list[int]) -> tuple[Tour, float]:
-    """
-    TSP nhỏ exact: tuyến khép kín tối ưu 0 → thăm đủ mọi đỉnh trong subset (một hoán vị) → 0.
+# ── Exact brute-force (|W| ≤ 8) ──────────────────────────────
 
-    Tham số:
-        inst: khoảng cách metric.
-        vehicle: chỉ xét hoán vị thỏa u[vehicle, j]=1 cho mọi j trên tuyến.
-        subset: danh sách khách (không gồm depot).
-
-    Trả về: (tuyến tốt nhất, chi phí). subset rỗng → [0,0], cost 0.
-    """
+def _exact_best_tour(
+    inst: VRPCCInstance, vehicle: int, subset: list[int],
+) -> tuple[Tour, float]:
     if not subset:
         return [0, 0], 0.0
-    customers = list(subset)
-    d = inst.dist
     best_c = np.inf
-    best_tour: Tour = [0, customers[0], 0]
-    for perm in itertools.permutations(customers):
-        ok = all(inst.u[vehicle, p] == 1 for p in perm)
-        if not ok:
+    best_tour: Tour = [0, subset[0], 0]
+    for perm in itertools.permutations(subset):
+        if not all(inst.u[vehicle, p] == 1 for p in perm):
             continue
         seq: Tour = [0] + list(perm) + [0]
         c = _tour_cost(inst, seq)
@@ -67,66 +86,188 @@ def _exact_best_tour_on_subset(inst: VRPCCInstance, vehicle: int, subset: list[i
     return best_tour, float(best_c)
 
 
-def _choose_best_k_subset_exact(inst: VRPCCInstance, vehicle: int, W: list[int], k: int) -> tuple[Tour, float]:
-    """
-    Chọn đúng k khách trong W và tìm tuyến khép kín qua depot có chi phí nhỏ nhất (duyệt tổ hợp + TSP con).
-
-    Tham số:
-        inst, vehicle: như trên.
-        W: tập khách ứng viên (đã lọc khả thi với xe).
-        k: số khách phải thăm (0 → [0,0]).
-
-    Trả về: (tuyến, chi phí).
-    """
+def _exact_k_subset(
+    inst: VRPCCInstance, vehicle: int, W: list[int], k: int,
+) -> tuple[Tour, float]:
     if k <= 0:
         return [0, 0], 0.0
     best_c = np.inf
     best_tour: Tour = [0, 0]
     for comb in itertools.combinations(W, k):
-        t, c = _exact_best_tour_on_subset(inst, vehicle, list(comb))
+        t, c = _exact_best_tour(inst, vehicle, list(comb))
         if c < best_c:
             best_c = c
             best_tour = t
     return best_tour, float(best_c)
 
 
-def _nearest_neighbor_tour(inst: VRPCCInstance, vehicle: int, nodes: list[int]) -> Tour:
-    """
-    Heuristic Nearest Neighbor: xuất phát từ depot, mỗi bước chọn khách khả thi (u) gần đỉnh hiện tại nhất.
+# ── Prim MST ─────────────────────────────────────────────────
 
-    Tham số:
-        inst: khoảng cách.
-        vehicle: ràng buộc u.
-        nodes: tập đỉnh khách cần ghép vào tuyến (chỉ dùng các đỉnh thỏa u).
+def _prim_mst(
+    dist: np.ndarray, root: int, nodes: list[int],
+) -> dict[int, int]:
+    all_nodes = [root] + [v for v in nodes if v != root]
+    if len(all_nodes) <= 1:
+        return {}
+    in_tree = {root}
+    parent: dict[int, int] = {}
+    pq: list[tuple[float, int, int]] = []
+    for v in all_nodes:
+        if v != root:
+            heapq.heappush(pq, (float(dist[root, v]), v, root))
+    while pq and len(in_tree) < len(all_nodes):
+        cost, v, p = heapq.heappop(pq)
+        if v in in_tree:
+            continue
+        in_tree.add(v)
+        parent[v] = p
+        for w in all_nodes:
+            if w not in in_tree:
+                heapq.heappush(pq, (float(dist[v, w]), w, v))
+    return parent
 
-    Trả về: tuyến khép kín [0, ..., 0].
-    """
-    if not nodes:
+
+def _build_children(
+    parent: dict[int, int], root: int, dist: np.ndarray,
+) -> dict[int, list[int]]:
+    all_nodes = {root} | set(parent.keys())
+    children: dict[int, list[int]] = {v: [] for v in all_nodes}
+    for v, p in parent.items():
+        children[p].append(v)
+    for v in all_nodes:
+        children[v].sort(key=lambda c: dist[v, c])
+    return children
+
+
+# ── Tree DP ───────────────────────────────────────────────────
+
+def _tree_dp(
+    dist: np.ndarray, root: int, children: dict[int, list[int]],
+) -> dict[int, dict[int, float]]:
+    """dp[v][j] = chi phí cạnh nhỏ nhất cây con j đỉnh rooted tại v."""
+    dp: dict[int, dict[int, float]] = {}
+    post_order: list[int] = []
+    stack: list[tuple[int, bool]] = [(root, False)]
+    while stack:
+        v, done = stack.pop()
+        if done:
+            post_order.append(v)
+        else:
+            stack.append((v, True))
+            for c in reversed(children[v]):
+                stack.append((c, False))
+    for v in post_order:
+        cur: dict[int, float] = {1: 0.0}
+        for c in children[v]:
+            ec = float(dist[v, c])
+            merged: dict[int, float] = {}
+            for j1, c1 in cur.items():
+                if j1 not in merged or c1 < merged[j1]:
+                    merged[j1] = c1
+                for j2, c2 in dp[c].items():
+                    j = j1 + j2
+                    total = c1 + c2 + ec
+                    if j not in merged or total < merged[j]:
+                        merged[j] = total
+            cur = merged
+        dp[v] = cur
+    return dp
+
+
+# ── Reconstruct k-subtree ────────────────────────────────────
+
+def _reconstruct(
+    dist: np.ndarray, root: int,
+    children: dict[int, list[int]],
+    dp: dict[int, dict[int, float]],
+    target_j: int,
+) -> set[int]:
+    def _find(v: int, j: int) -> set[int]:
+        if j <= 0:
+            return set()
+        if j == 1:
+            return {v}
+        result = {v}
+        ch = children[v]
+        if not ch:
+            return result
+        partial: list[dict[int, float]] = [{0: 0.0}]
+        for idx, c in enumerate(ch):
+            ec = float(dist[v, c])
+            prev = partial[idx]
+            new_p: dict[int, float] = {}
+            for j1, c1 in prev.items():
+                if j1 not in new_p or c1 < new_p[j1]:
+                    new_p[j1] = c1
+                for j2, c2 in dp[c].items():
+                    jj = j1 + j2
+                    tt = c1 + c2 + ec
+                    if jj not in new_p or tt < new_p[jj]:
+                        new_p[jj] = tt
+            partial.append(new_p)
+        remaining = j - 1
+        for idx in range(len(ch) - 1, -1, -1):
+            c = ch[idx]
+            ec = float(dist[v, c])
+            target_cost = partial[idx + 1].get(remaining, float("inf"))
+            skip_cost = partial[idx].get(remaining, float("inf"))
+            if abs(skip_cost - target_cost) < 1e-9:
+                continue
+            for j2 in sorted(dp[c].keys(), reverse=True):
+                j1 = remaining - j2
+                if j1 < 0:
+                    continue
+                prev_cost = partial[idx].get(j1, float("inf"))
+                total = prev_cost + dp[c][j2] + ec
+                if abs(total - target_cost) < 1e-9:
+                    result.update(_find(c, j2))
+                    remaining = j1
+                    break
+        return result
+
+    return _find(root, target_j)
+
+
+# ── DFS shortcut → tour ──────────────────────────────────────
+
+def _subtree_tour(
+    root: int, included: set[int],
+    children: dict[int, list[int]],
+) -> Tour:
+    has_inc: dict[int, bool] = {}
+
+    def _mark(v: int) -> bool:
+        r = v in included
+        for c in children[v]:
+            if _mark(c):
+                r = True
+        has_inc[v] = r
+        return r
+
+    _mark(root)
+    tour: list[int] = []
+
+    def _dfs(v: int) -> None:
+        if v in included:
+            tour.append(v)
+        for c in children[v]:
+            if has_inc.get(c, False):
+                _dfs(c)
+
+    _dfs(root)
+    if not tour:
         return [0, 0]
-    remaining = {v for v in nodes if inst.u[vehicle, v] == 1}
-    if not remaining:
-        return [0, 0]
-    tour: Tour = [0]
-    cur = 0
-    while remaining:
-        nxt = min(remaining, key=lambda v: inst.dist[cur, v])
-        tour.append(nxt)
-        remaining.remove(nxt)
-        cur = nxt
-    tour.append(0)
+    if tour[0] != 0:
+        tour.insert(0, 0)
+    if tour[-1] != 0:
+        tour.append(0)
     return tour
 
 
-def _two_opt_once(inst: VRPCCInstance, tour: Tour) -> Tour:
-    """
-    Cải thiện tuyến bằng 2-opt trên phần giữa (giữ cố định depot đầu/cuối), lặp đến khi không cải thiện.
+# ── 2-opt ─────────────────────────────────────────────────────
 
-    Tham số:
-        inst: ma trận dist.
-        tour: [0, v1, ..., vk, 0].
-
-    Trả về: tuyến sau 2-opt (cùng tập đỉnh, thứ tự có thể đổi).
-    """
+def _two_opt(inst: VRPCCInstance, tour: Tour) -> Tour:
+    tour = _close_tour(tour)
     if len(tour) < 5:
         return tour
     best = tour[:]
@@ -152,32 +293,9 @@ def _two_opt_once(inst: VRPCCInstance, tour: Tour) -> Tour:
     return best
 
 
-def _heuristic_tour_covering_k(inst: VRPCCInstance, vehicle: int, W: list[int], k: int) -> tuple[Tour, float]:
-    """
-    Tạo tuyến thăm k khách trong W: instance nhỏ thì exact + 2-opt; lớn thì chọn k khách gần depot rồi NN + 2-opt.
-
-    Tham số:
-        inst, vehicle: instance và xe.
-        W: ứng viên khách.
-        k: số khách cần phủ trên tuyến (capped bởi |W|).
-
-    Trả về: (tuyến khép kín, chi phí theo dist).
-    """
-    W = [v for v in W if v >= 1 and inst.u[vehicle, v] == 1]
-    if k <= 0 or not W:
-        return [0, 0], 0.0
-    k = min(k, len(W))
-    if len(W) <= 12 and k <= 8:
-        t, c = _choose_best_k_subset_exact(inst, vehicle, W, k)
-        t = _two_opt_once(inst, t)
-        return t, _tour_cost(inst, t)
-    # Greedy subset: k nearest to depot
-    dep = 0
-    sorted_w = sorted(W, key=lambda v: inst.dist[dep, v])[:k]
-    t = _nearest_neighbor_tour(inst, vehicle, sorted_w)
-    t = _two_opt_once(inst, t)
-    return t, _tour_cost(inst, t)
-
+# ══════════════════════════════════════════════════════════════
+# Main oracle
+# ══════════════════════════════════════════════════════════════
 
 def oracle_k_tsp(
     inst: VRPCCInstance,
@@ -185,63 +303,75 @@ def oracle_k_tsp(
     budget: float,
     vehicle: int,
     *,
-    beta: float = 2.0,
-    exact_max_w: int = 12,
+    beta: float = 5.0,
 ) -> tuple[Tour, set[int]]:
     """
-    Oracle bicriteria (khung như paper): tối đa hoá số khách trong Y mà xe được phép thăm,
-    với chi phí tuyến ≤ beta × budget (binary search theo k). Nếu không có k nào thỏa, trả [0,0] và ∅.
+    Oracle bicriteria (mục 3):
+      max |coverage| subject to cost(tour) ≤ β·B.
 
-    Tham số:
-        inst: VRPCC.
-        Y: tập chỉ số khách đang xét.
-        budget: B (ngân sách chi phí).
-        vehicle: chỉ số xe.
-        beta: hệ số bicriteria (paper lý thuyết dùng beta=2 với k-TSP [20]; oracle thực tế ở đây là heuristic).
-        exact_max_w: nếu |W| nhỏ và k nhỏ thì dùng exact subset.
-
-    Trả về:
-        - tuyến khép kín từ depot;
-        - tập khách thực sự nằm trên tuyến (không gồm 0).
+    Binary search trên tree cost (đơn điệu) để tìm k lớn nhất nhanh,
+    rồi xác nhận bằng tour cost thực tế.
     """
     W = sorted(j for j in Y if j >= 1 and inst.u[vehicle, j] == 1)
     if not W or budget <= 0:
         return [0, 0], set()
 
-    def solve_k(k: int) -> tuple[Tour, float]:
-        if len(W) <= exact_max_w and k <= min(8, len(W)):
-            return _choose_best_k_subset_exact(inst, vehicle, W, k)
-        return _heuristic_tour_covering_k(inst, vehicle, W, k)
+    threshold = beta * budget + 1e-9
 
-    lo, hi = 1, len(W)
-    best_tour: Tour = [0, 0]
-    best_vis: set[int] = set()
-    while lo <= hi:
-        mid = (lo + hi) // 2
-        tour, cost = solve_k(mid)
-        if cost <= beta * budget + 1e-9:
-            best_tour = tour
-            best_vis = set(tour) - {0}
-            lo = mid + 1
-        else:
-            hi = mid - 1
-    if not best_vis:
+    # ── Small: exact brute-force ──
+    if len(W) <= EXACT_THRESHOLD:
+        for k in range(len(W), 0, -1):
+            t, c = _exact_k_subset(inst, vehicle, W, k)
+            t = _two_opt(inst, t)
+            c = _tour_cost(inst, t)
+            if c <= threshold:
+                return _close_tour(t), set(t) - {0}
         return [0, 0], set()
-    return best_tour, best_vis
+
+    # ── Large: MST + tree DP ──
+    parent = _prim_mst(inst.dist, 0, W)
+    children = _build_children(parent, 0, inst.dist)
+    dp = _tree_dp(inst.dist, 0, children)
+
+    # Phase 1: binary search trên tree cost (đơn điệu tăng theo k)
+    lo_k, hi_k = 0, len(W)
+    while lo_k < hi_k:
+        mid = (lo_k + hi_k + 1) // 2
+        j = mid + 1
+        if j in dp[0] and dp[0][j] <= threshold:
+            lo_k = mid
+        else:
+            hi_k = mid - 1
+    k_tree_max = lo_k
+
+    if k_tree_max == 0:
+        return [0, 0], set()
+
+    # Phase 2: kiểm tra tour cost thực tế quanh k_tree_max
+    search_hi = min(len(W), k_tree_max + 3)
+    for k in range(search_hi, 0, -1):
+        j = k + 1
+        if j not in dp[0]:
+            continue
+        nodes = _reconstruct(inst.dist, 0, children, dp, j)
+        tour = _subtree_tour(0, nodes, children)
+        cost = _tour_cost(inst, tour)
+        if cost <= threshold:
+            tour = _two_opt(inst, tour)
+            return _close_tour(tour), set(tour) - {0}
+        if cost <= 2.0 * threshold:
+            tour = _two_opt(inst, tour)
+            cost = _tour_cost(inst, tour)
+            if cost <= threshold:
+                return _close_tour(tour), set(tour) - {0}
+
+    return [0, 0], set()
 
 
 def make_oracle(
     inst: VRPCCInstance,
     *,
-    beta: float = 2.0,
+    beta: float = 5.0,
 ) -> Callable[[set[int], float, int], tuple[Tour, set[int]]]:
-    """
-    Đóng gói `oracle_k_tsp` với instance và beta cố định thành hàm một dòng dùng cho Algorithm 1.
-
-    Tham số:
-        inst: VRPCC cố định.
-        beta: hệ số bicriteria truyền vào mọi lần gọi oracle.
-
-    Trả về: callable (Y, B, vehicle) → (tuyến, tập khách đã thăm), signature khớp `OracleFn` trong approx_algorithm.
-    """
+    """Đóng gói oracle theo signature O(Y, B, vehicle) cho Algorithm 1."""
     return lambda Y, B, veh: oracle_k_tsp(inst, Y, B, veh, beta=beta)

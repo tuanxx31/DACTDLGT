@@ -43,12 +43,13 @@ def _run_approx(
     observer = LoggingApproxObserver() if algorithm_trace else NULL_OBSERVER
     t0 = time.perf_counter()
     observer.on_run_start(inst.name or "instance")
-    routes, B = algorithm_2_vrpcc(inst, oracle, eps=1e-3, observer=observer)
+    result = algorithm_2_vrpcc(inst, oracle, eps=1e-3, beta=beta, observer=observer)
+    routes = result.routes
     if use_ls:
         routes = local_search(inst, routes)
     elapsed = time.perf_counter() - t0
     obj = inst.makespan(routes)
-    return routes, elapsed, obj, B
+    return routes, elapsed, obj, result.B_upper
 
 
 def main() -> None:
@@ -76,8 +77,8 @@ def main() -> None:
     ap.add_argument(
         "--beta",
         type=float,
-        default=2.0,
-        help="Hệ số bicriteria oracle (paper lý thuyết beta=2; implementation heuristic)",
+        default=5.0,
+        help="Hệ số bicriteria oracle (paper thực nghiệm dùng k-TSP 5-approx; cận tốt nhất lý thuyết là beta=2)",
     )
     ap.add_argument(
         "--no-local-search",
@@ -100,7 +101,7 @@ def main() -> None:
     ap.add_argument(
         "--skip-mip",
         action="store_true",
-        help="Chỉ chạy thuật toán bài báo (approx + local search); không gọi Gurobi / MIP",
+        help="Chỉ chạy thuật toán bài báo (approx + local search), bỏ MIP tham chiếu",
     )
     ap.add_argument(
         "--verbose",

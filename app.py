@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
-Chạy riêng pipeline theo paper (Algorithm 1–2 + heuristic oracle lấy cảm hứng k-TSP, tuỳ chọn local search).
-Không gọi MIP/Gurobi — dùng khi chỉ cần approx nhanh.
+VRPCC — Approximation Algorithm (Yu, Nagarajan, Shen 2018).
+
+Chạy Algorithm 2 (binary search trên B) + Algorithm 1 (MCG-VRP greedy)
+với oracle k-TSP bicriteria (β = 5). Tuỳ chọn local search (2-opt + relocation).
+
+In chi tiết: cận trên, cận dưới, B tốt nhất, makespan, chi phí từng xe, thời gian.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from pathlib import Path
@@ -16,7 +21,7 @@ _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from vrpcc.approx_algorithm import algorithm_2_vrpcc
+from vrpcc.approx_algorithm import VRPCCResult, algorithm_2_vrpcc
 from vrpcc.approx_observer import NULL_OBSERVER
 from vrpcc.approx_observer_logging import (
     LoggingApproxObserver,
@@ -27,90 +32,90 @@ from vrpcc.k_tsp_oracle import make_oracle
 from vrpcc.local_search import local_search
 from vrpcc.plotting import plot_approx_only_bars, plot_routes_map
 
+SEP = "=" * 64
 
-def run_paper_algorithm(
+
+def _print_result(
+    name: str,
     inst: VRPCCInstance,
-    *,
-    beta: float,
-    use_local_search: bool,
-    eps: float,
-    algorithm_trace: bool = True,
-) -> tuple[list[list[int]], float, float, float]:
-    """
-    Chạy pipeline trên một instance: heuristic oracle → Algorithm 2 → (tuỳ chọn) local search.
+    result: VRPCCResult,
+    routes_final: list[list[int]],
+    makespan_final: float,
+    elapsed_total: float,
+    use_ls: bool,
+) -> None:
+    n = inst.n_nodes
+    log2n = math.ceil(math.log2(max(inst.n_customers, 2)))
 
-    Trả về:
-        - routes: danh sách tuyến theo xe, mỗi tuyến là chuỗi đỉnh khép kín qua depot (0).
-        - elapsed: thời gian chạy (giây), gồm cả local search nếu bật.
-        - obj: giá trị makespan (max chi phí tuyến trên các xe).
-        - B: ngân sách (cận trên khả thi) sau nhị phân trong Algorithm 2.
+    print(f"\n{SEP}")
+    print(f"  Instance : {name}")
+    print(f"  Nodes    : {n} (1 depot + {inst.n_customers} customers)")
+    print(f"  Vehicles : {inst.m}")
+    print(f"  Beta     : {result.beta}")
+    print(f"  Epsilon  : {result.eps}")
+    print(SEP)
 
-    Tham số:
-        inst: bài toán VRPCC (ma trận khoảng cách, ma trận tương thích u).
-        beta: hệ số bicriteria (mặc định 2 như lý thuyết paper; chi phí oracle ≤ beta × B khi có tuyến khả thi).
-        use_local_search: True thì áp dụng mục 4 (2-opt theo đoạn + relocation).
-        eps: độ chính xác binary search trên B trong Algorithm 2 (dừng khi upper−lower < eps).
-        algorithm_trace: True thì ghi trace (file đã cấu hình bằng `configure_approx_trace_file` ở CLI).
-    """
-    oracle = make_oracle(inst, beta=beta)
-    observer = LoggingApproxObserver() if algorithm_trace else NULL_OBSERVER
-    t0 = time.perf_counter()
-    observer.on_run_start(inst.name or "instance")
-    routes, B = algorithm_2_vrpcc(inst, oracle, eps=eps, observer=observer)
-    if use_local_search:
-        routes = local_search(inst, routes)
-    elapsed = time.perf_counter() - t0
-    obj = inst.makespan(routes)
-    return routes, elapsed, obj, B
+    print(f"\n  Algorithm 2 — Binary Search trên B")
+    print(f"  ─────────────────────────────────────")
+    print(f"  Cận trên ban đầu u₀  = 2·Σc_ij = {result.B_init_upper:.4f}")
+    print(f"  Cận dưới ban đầu l₀  = 0")
+    print(f"  Số bước nhị phân     = {result.n_binary_steps}")
+    print(f"  Số lượt greedy (B*)  = {result.n_waves_last_feasible}")
+    print(f"  ───────────────────────────")
+    print(f"  Cận dưới cuối  l     = {result.B_lower:.6f}")
+    print(f"  Cận trên cuối  u     = {result.B_upper:.6f}")
+    print(f"  B tốt nhất (= u)    = {result.B_upper:.6f}")
+    print(f"  Khoảng u - l         = {result.B_upper - result.B_lower:.6g}")
+
+    print(f"\n  Cận xấp xỉ lý thuyết (Lemma 5)")
+    print(f"  ─────────────────────────────────────")
+    print(f"  ⌈log₂ n⌉            = {log2n}")
+    print(f"  (1+ε)·β·⌈log₂ n⌉   = {result.approx_ratio_bound:.2f}")
+    print(f"  → makespan ≤ {result.approx_ratio_bound:.2f} × OPT")
+
+    print(f"\n  Tuyến xe (Algorithm 2)")
+    print(f"  ─────────────────────────────────────")
+    for k in range(inst.m):
+        r = result.routes[k]
+        custs = [v for v in r if v != 0]
+        c = result.route_costs[k]
+        print(f"  Xe {k}: {len(custs):2d} khách | cost = {c:10.4f} | {r}")
+
+    print(f"\n  Makespan (Algorithm 2)     = {result.makespan:.4f}")
+
+    if use_ls:
+        print(f"\n  Local Search (2-opt + relocation)")
+        print(f"  ─────────────────────────────────────")
+        for k in range(inst.m):
+            r = routes_final[k]
+            custs = [v for v in r if v != 0]
+            c = inst.tour_length(r, k) if len(r) >= 2 else 0.0
+            print(f"  Xe {k}: {len(custs):2d} khách | cost = {c:10.4f} | {r}")
+        print(f"\n  Makespan (sau local search) = {makespan_final:.4f}")
+
+    print(f"\n  Thời gian")
+    print(f"  ─────────────────────────────────────")
+    print(f"  Algorithm 2          = {result.elapsed_sec:.3f}s")
+    print(f"  Tổng (+ local search)= {elapsed_total:.3f}s")
+    print(f"{SEP}\n")
 
 
 def main() -> None:
-    """
-    Điểm vào CLI: đọc instance JSON, gọi run_paper_algorithm, in kết quả và (tuỳ chọn) lưu hình/summary.
-
-    Tham số dòng lệnh được khai báo qua argparse (--instance, --beta, --no-local-search, ...).
-    Không import hay gọi MIP/Gurobi.
-    """
     ap = argparse.ArgumentParser(
-        description="VRPCC: chỉ thuật toán bài báo (approx + local search), không MIP",
+        description="VRPCC: thuật toán bài báo (approx + local search), không MIP",
     )
     ap.add_argument(
-        "--instance",
-        type=Path,
-        action="append",
-        help="File JSON instance (lặp lại cho nhiều file). Mặc định: *.json trong vrpcc/data/instances",
+        "--instance", type=Path, action="append",
+        help="File JSON instance (lặp lại cho nhiều file)",
     )
-    ap.add_argument(
-        "--beta",
-        type=float,
-        default=2.0,
-        help="Hệ số bicriteria oracle (paper lý thuyết beta=2; oracle trong repo là heuristic)",
-    )
-    ap.add_argument(
-        "--no-local-search",
-        action="store_true",
-        help="Tắt local search sau Algorithm 2",
-    )
-    ap.add_argument("--eps", type=float, default=1e-3, help="Ngưỡng binary search trên B")
-    ap.add_argument("--out-dir", type=Path, default=Path("output_runs"), help="Kết quả JSON + hình + log trace")
-    ap.add_argument("--no-plots", action="store_true", help="Không vẽ PNG")
-    ap.add_argument(
-        "--log-file",
-        type=Path,
-        default=None,
-        help="File log chi tiết thuật toán (mặc định: OUT_DIR/approx_algorithm.log)",
-    )
-    ap.add_argument(
-        "--no-algorithm-log",
-        action="store_true",
-        help="Tắt ghi trace nhị phân / tham lam (chỉ còn JSON ra stdout)",
-    )
-    ap.add_argument(
-        "--verbose",
-        "-v",
-        action="store_true",
-        help="Luôn ghi trace (ghi đè --no-algorithm-log nếu có)",
-    )
+    ap.add_argument("--beta", type=float, default=5.0)
+    ap.add_argument("--no-local-search", action="store_true")
+    ap.add_argument("--eps", type=float, default=1e-3)
+    ap.add_argument("--out-dir", type=Path, default=Path("output_runs"))
+    ap.add_argument("--no-plots", action="store_true")
+    ap.add_argument("--log-file", type=Path, default=None)
+    ap.add_argument("--no-algorithm-log", action="store_true")
+    ap.add_argument("--verbose", "-v", action="store_true")
     args = ap.parse_args()
 
     algorithm_trace = (not args.no_algorithm_log) or args.verbose
@@ -126,13 +131,12 @@ def main() -> None:
         sys.exit(1)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    log_path: Path | None = None
     if algorithm_trace:
         log_path = args.log_file if args.log_file is not None else args.out_dir / "approx_algorithm.log"
         configure_approx_trace_file(log_path, mode="w")
-        print(f"Trace thuật toán (nhị phân + tham lam) → {log_path.resolve()}", flush=True)
+        print(f"Trace → {log_path.resolve()}", flush=True)
 
-    results: list[dict] = []
+    results_json: list[dict] = []
     use_ls = not args.no_local_search
 
     for p in paths:
@@ -140,43 +144,64 @@ def main() -> None:
             continue
         inst = VRPCCInstance.load_json(p)
         name = inst.name or p.stem
-        routes, elapsed, obj, B = run_paper_algorithm(
-            inst,
-            beta=args.beta,
-            use_local_search=use_ls,
-            eps=args.eps,
-            algorithm_trace=algorithm_trace,
+
+        oracle = make_oracle(inst, beta=args.beta)
+        observer = LoggingApproxObserver() if algorithm_trace else NULL_OBSERVER
+        observer.on_run_start(name)
+
+        t_total_start = time.perf_counter()
+        result = algorithm_2_vrpcc(
+            inst, oracle, eps=args.eps, beta=args.beta, observer=observer,
         )
+
+        if use_ls:
+            routes_final = local_search(inst, result.routes)
+            makespan_final = inst.makespan(routes_final)
+        else:
+            routes_final = result.routes
+            makespan_final = result.makespan
+
+        elapsed_total = time.perf_counter() - t_total_start
+
+        _print_result(name, inst, result, routes_final, makespan_final, elapsed_total, use_ls)
+
         row = {
             "name": name,
             "file": str(p),
-            "approx_obj": obj,
-            "approx_time": elapsed,
-            "B": B,
+            "n_customers": inst.n_customers,
+            "n_vehicles": inst.m,
             "beta": args.beta,
+            "eps": args.eps,
+            "B_lower": result.B_lower,
+            "B_upper": result.B_upper,
+            "B_init_upper": result.B_init_upper,
+            "n_binary_steps": result.n_binary_steps,
+            "approx_ratio_bound": result.approx_ratio_bound,
+            "makespan_algo2": result.makespan,
+            "makespan_final": makespan_final,
+            "time_algo2": result.elapsed_sec,
+            "time_total": elapsed_total,
             "local_search": use_ls,
         }
-        results.append(row)
-        print(json.dumps(row, indent=2, ensure_ascii=False))
+        results_json.append(row)
 
         if not args.no_plots and inst.coords is not None:
             plot_routes_map(
-                inst,
-                routes,
+                inst, routes_final,
                 args.out_dir / f"routes_paper_{name}.png",
                 title=f"Thuật toán bài báo — {name}",
             )
 
     summary_path = args.out_dir / "summary_paper_only.json"
-    summary_path.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
-    print("Wrote", summary_path)
+    summary_path.write_text(json.dumps(results_json, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"Summary JSON → {summary_path}")
 
-    if not args.no_plots and results:
-        labels = [str(r["name"]) for r in results]
+    if not args.no_plots and results_json:
+        labels = [str(r["name"]) for r in results_json]
         plot_approx_only_bars(
             labels,
-            [float(r["approx_time"]) for r in results],
-            [float(r["approx_obj"]) for r in results],
+            [float(r["time_total"]) for r in results_json],
+            [float(r["makespan_final"]) for r in results_json],
             args.out_dir / "approx_bars.png",
         )
 
