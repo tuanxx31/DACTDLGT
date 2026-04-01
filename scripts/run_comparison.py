@@ -32,6 +32,16 @@ from vrpcc.local_search import local_search
 from vrpcc.plotting import plot_from_results_list, plot_routes_map
 
 
+def _collect_json_files_recursive(root_dir: Path) -> list[Path]:
+    """Lấy toàn bộ JSON trong thư mục (đệ quy), bỏ qua manifest."""
+    if not root_dir.is_dir():
+        return []
+    return sorted(
+        p for p in root_dir.rglob("*.json")
+        if p.is_file() and p.name != "manifest.json"
+    )
+
+
 def _run_approx(
     inst: VRPCCInstance,
     beta: float,
@@ -61,6 +71,12 @@ def main() -> None:
         type=Path,
         action="append",
         help="JSON instance (lặp lại cho nhiều file). Mặc định: tất cả *.json trong vrpcc/data/instances",
+    )
+    ap.add_argument(
+        "--instance-dir",
+        type=Path,
+        action="append",
+        help="Thư mục chứa JSON instance (quét đệ quy, ví dụ: MIP/data, MIP/data2)",
     )
     ap.add_argument(
         "--mip-limit-1",
@@ -113,11 +129,21 @@ def main() -> None:
 
     algorithm_trace = (not args.no_algorithm_log) or args.verbose
 
+    paths: list[Path] = []
     if args.instance:
-        paths = args.instance
-    else:
+        for p in args.instance:
+            pp = p if p.is_absolute() else (_ROOT / p)
+            if pp.is_dir():
+                paths.extend(_collect_json_files_recursive(pp))
+            else:
+                paths.append(pp)
+    if args.instance_dir:
+        for d in args.instance_dir:
+            dd = d if d.is_absolute() else (_ROOT / d)
+            paths.extend(_collect_json_files_recursive(dd))
+    if not paths:
         inst_dir = _ROOT / "vrpcc" / "data" / "instances"
-        paths = sorted(inst_dir.glob("*.json")) if inst_dir.is_dir() else []
+        paths = _collect_json_files_recursive(inst_dir)
 
     if not paths:
         print("Không có instance. Chạy: python -m vrpcc.data.generate_instances")

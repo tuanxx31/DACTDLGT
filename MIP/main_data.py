@@ -13,6 +13,7 @@ DATA_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 INSTANCES = ("c-n21-k6", "r-n21-k6", "RC-n21-k6")
 
 
+
 def main() -> None:
     tl = float(os.environ.get("VRPCC_TIME_LIMIT", "600"))
     verbose = os.environ.get("VRPCC_VERBOSE", "0") == "1"
