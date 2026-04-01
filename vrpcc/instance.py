@@ -145,17 +145,36 @@ class VRPCCInstance:
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> VRPCCInstance:
         """
-        Tạo instance từ dict (định dạng giống file JSON trong repo).
+        Tạo instance từ dict.
 
         Tham số:
-            d: phải có khóa "dist", "u"; tuỳ chọn "name", "metadata", "coords".
+            Hỗ trợ 2 định dạng:
+            - VRPCC app format: "dist", "u", (tuỳ chọn) "coords", "name", "metadata"
+            - MIP format: "c", "u", (tuỳ chọn) "coordinates", "name", "n", "m"
 
         Trả về: VRPCCInstance.
         """
+        dist_key = "dist" if "dist" in d else "c"
         coords = d.get("coords")
+        if coords is None and "coordinates" in d:
+            coords = d["coordinates"]
+
+        if dist_key not in d or "u" not in d:
+            raise ValueError("instance dict must contain ('dist' or 'c') and 'u'")
+
+        # Nếu có n/m trong file MIP thì kiểm tra nhanh cho chắc dữ liệu không lệch shape.
+        dist_raw = np.array(d[dist_key], dtype=np.float64)
+        u_raw = np.array(d["u"], dtype=np.int8)
+        n_meta = d.get("n")
+        m_meta = d.get("m")
+        if n_meta is not None and int(n_meta) != int(dist_raw.shape[0]):
+            raise ValueError(f"n mismatch: meta n={n_meta}, dist size={dist_raw.shape[0]}")
+        if m_meta is not None and int(m_meta) != int(u_raw.shape[0]):
+            raise ValueError(f"m mismatch: meta m={m_meta}, u rows={u_raw.shape[0]}")
+
         return cls(
-            dist=np.array(d["dist"], dtype=np.float64),
-            u=np.array(d["u"], dtype=np.int8),
+            dist=dist_raw,
+            u=u_raw,
             name=str(d.get("name", "")),
             metadata=dict(d.get("metadata", {})),
             coords=np.array(coords, dtype=np.float64) if coords is not None else None,

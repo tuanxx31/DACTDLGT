@@ -113,6 +113,10 @@ def main() -> None:
         "--instance", type=Path, action="append",
         help="File JSON instance (lặp lại cho nhiều file)",
     )
+    ap.add_argument(
+        "--instance-dir", type=Path, action="append",
+        help="Thư mục chứa các JSON instance (ví dụ: MIP/data, MIP/data2)",
+    )
     ap.add_argument("--beta", type=float, default=5.0)
     ap.add_argument("--no-local-search", action="store_true")
     ap.add_argument("--eps", type=float, default=1e-3)
@@ -125,11 +129,20 @@ def main() -> None:
 
     algorithm_trace = (not args.no_algorithm_log) or args.verbose
 
+    paths: list[Path] = []
     if args.instance:
-        paths = args.instance
-    else:
+        paths.extend(args.instance)
+    if args.instance_dir:
+        for d in args.instance_dir:
+            dd = d if d.is_absolute() else (_ROOT / d)
+            if dd.is_dir():
+                paths.extend(sorted(dd.glob("*.json")))
+
+    if not paths:
         inst_dir = _ROOT / "vrpcc" / "data" / "instances"
         paths = sorted(inst_dir.glob("*.json")) if inst_dir.is_dir() else []
+    else:
+        paths = sorted({p.resolve() for p in paths})
 
     if not paths:
         print("Không có instance. Chạy: python -m vrpcc.data.generate_instances")
