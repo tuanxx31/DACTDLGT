@@ -35,6 +35,16 @@ from vrpcc.plotting import plot_approx_only_bars, plot_routes_map
 SEP = "=" * 64
 
 
+def _collect_json_files_recursive(root_dir: Path) -> list[Path]:
+    """Lấy toàn bộ JSON trong thư mục (đệ quy), bỏ qua manifest."""
+    if not root_dir.is_dir():
+        return []
+    return sorted(
+        p for p in root_dir.rglob("*.json")
+        if p.is_file() and p.name != "manifest.json"
+    )
+
+
 def _print_result(
     name: str,
     inst: VRPCCInstance,
@@ -131,16 +141,20 @@ def main() -> None:
 
     paths: list[Path] = []
     if args.instance:
-        paths.extend(args.instance)
+        for p in args.instance:
+            pp = p if p.is_absolute() else (_ROOT / p)
+            if pp.is_dir():
+                paths.extend(_collect_json_files_recursive(pp))
+            else:
+                paths.append(pp)
     if args.instance_dir:
         for d in args.instance_dir:
             dd = d if d.is_absolute() else (_ROOT / d)
-            if dd.is_dir():
-                paths.extend(sorted(dd.glob("*.json")))
+            paths.extend(_collect_json_files_recursive(dd))
 
     if not paths:
         inst_dir = _ROOT / "vrpcc" / "data" / "instances"
-        paths = sorted(inst_dir.glob("*.json")) if inst_dir.is_dir() else []
+        paths = _collect_json_files_recursive(inst_dir)
     else:
         paths = sorted({p.resolve() for p in paths})
 

@@ -1,30 +1,31 @@
-"""Chạy MIP VRPCC trên bộ dữ liệu tương thích chặt (`data/`).
-
-Traceback tại subprocess.wait / cbc.wait thường là bạn đã nhấn Ctrl+C
-để ngắt khi CBC đang chạy lâu — không phải lỗi cài đặt.
+"""
+Chạy MIP trên bộ dữ liệu `data`: tương thích chặt (p = 0.3 theo bài báo).
 """
 from __future__ import annotations
 
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import vrpcc_mip as vm
+from instancegen import load_instance
+from vrpcc_mip import format_mip_summary, solve_vrpcc
+
+DATA_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+INSTANCES = ("c-n21-k6", "r-n21-k6", "RC-n21-k6")
 
 
 def main() -> None:
-    # Mặc định ~2 phút/instance (CBC); tăng time_budget_sec nếu cần LB chặt hơn
-    results = vm.solve_folder(
-        "data",
-        time_budget_sec=120,
-        per_solve_cap_sec=60,
-        max_iters=25,
-    )
-    for r in results:
-        print(
-            f"{r.name}: status={r.status}, stop={r.stop_reason!r}, tau={r.tau}, "
-            f"time={r.time_sec:.2f}s — {r.message}"
-        )
+    tl = float(os.environ.get("VRPCC_TIME_LIMIT", "600"))
+    verbose = os.environ.get("VRPCC_VERBOSE", "0") == "1"
+    for name in INSTANCES:
+        path = os.path.join(DATA_ROOT, name, f"{name}.json")
+        if not os.path.isfile(path):
+            print(f"Thiếu file: {path}", file=sys.stderr)
+            sys.exit(1)
+        inst = load_instance(path)
+        print(f"\n=== {name} | tight compatibility prob={inst.prob_compat} | layout={inst.layout} ===")
+        print("MIP (min tau) - Gurobi report:")
+        rep = solve_vrpcc(inst, time_limit=tl, verbose=verbose)
+        print(format_mip_summary(rep))
 
 
 if __name__ == "__main__":

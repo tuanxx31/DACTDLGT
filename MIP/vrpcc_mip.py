@@ -1,351 +1,269 @@
-"""
-VRPCC (Yu, Nagarajan, Shen 2018) — MIP min makespan tau.
-
-Tham số (input) theo bài báo:
-  - c[i][j]: chi phí cạnh (khoảng cách).
-  - u[k][i] tuong ung u^k_i: =1 neu xe k duoc phuc vu tai nut i (khach); kho i=0 luon 1.
-  - n, m: so nut, so xe.
-
-Output toi uu: tau (makespan); bien x^k_ij trong solver.
-
-Hai thu muc du lieu tho (chi khac do chat cua u):
-  - data/   tuong thich chat
-  - data2/  tuong thich thoang hon
-
-main_data.py  -> chi data/
-main_data2.py -> chi data2/
-"""
 from __future__ import annotations
 
-import json
-import os
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
-import pulp as pl
+import gurobipy as gp
+from gurobipy import GRB
+
+from instancegen import Instance
 
 
 @dataclass
-class SolveResult:
-    name: str
-    status: str
-    objective: Optional[float]
-    tau: Optional[float]
-    time_sec: float
-    iterations: int
-    message: str
-    stop_reason: str = ""
+class MIPReport:
+    lb: float | None
+    ub: float | None
+    best_tau: float | None
+    mip_gap: float | None
+    time_sec: float  # wall-clock toàn bộ solve_vrpcc (dựng mô hình + optimize)
+    gurobi_runtime: float  # chỉ lệnh optimize() — thuộc tính model.Runtime
+    status: int
+    nodes: int
 
 
-def load_instance(path: str) -> dict:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+def _status_name(code: int) -> str:
+    names = {
+        GRB.LOADED: "LOADED",
+        GRB.OPTIMAL: "OPTIMAL",
+        GRB.INFEASIBLE: "INFEASIBLE",
+        GRB.INF_OR_UNBD: "INF_OR_UNBD",
+        GRB.UNBOUNDED: "UNBOUNDED",
+        GRB.CUTOFF: "CUTOFF",
+        GRB.ITERATION_LIMIT: "ITERATION_LIMIT",
+        GRB.NODE_LIMIT: "NODE_LIMIT",
+        GRB.TIME_LIMIT: "TIME_LIMIT",
+        GRB.SOLUTION_LIMIT: "SOLUTION_LIMIT",
+        GRB.INTERRUPTED: "INTERRUPTED",
+        GRB.NUMERIC: "NUMERIC",
+        GRB.SUBOPTIMAL: "SUBOPTIMAL",
+        GRB.INPROGRESS: "INPROGRESS",
+        GRB.USER_OBJ_LIMIT: "USER_OBJ_LIMIT",
+    }
+    return names.get(code, str(code))
 
 
-def _xk_values(
-    x: Dict[Tuple[int, int, int], pl.LpVariable], k: int, n: int
-) -> List[List[float]]:
-    mat = [[0.0] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(n):
-            if (k, i, j) in x:
-                v = x[(k, i, j)].value()
-                mat[i][j] = float(v) if v is not None else 0.0
-    return mat
+def _fmt_float(x: float | None) -> str:
+    if x is None:
+        return "n/a"
+    return repr(x)
 
 
-def find_subtour_customer_set(
-    xk: List[List[float]], n: int, tol: float = 0.5
-) -> Optional[Set[int]]:
-    used: Set[int] = set()
-    for i in range(n):
-        for j in range(n):
-            if i != j and xk[i][j] > tol:
-                used.add(i)
-                used.add(j)
-    if not used:
-        return None
-    reach: Set[int] = {0}
-    stack = [0]
-    while stack:
-        v = stack.pop()
-        for w in range(n):
-            if xk[v][w] > tol and w not in reach:
-                reach.add(w)
-                stack.append(w)
-    viol = used - reach
-    viol.discard(0)
-    if not viol:
-        return None
-    start = min(viol)
-    comp: Set[int] = set()
-    stack2 = [start]
-    while stack2:
-        v = stack2.pop()
-        if v in comp:
-            continue
-        comp.add(v)
-        for w in range(n):
-            if w in viol and w != v and xk[v][w] > tol:
-                stack2.append(w)
-            if w in viol and w != v and xk[w][v] > tol:
-                stack2.append(w)
-    cust = {v for v in comp if v > 0}
-    return cust if len(cust) >= 2 else None
+def format_mip_summary(r: MIPReport) -> str:
+    gap_s = f"{repr(100.0 * r.mip_gap)} %" if r.mip_gap is not None else "n/a"
+
+    return "\n".join([
+        f"  LB (ObjBound):         {_fmt_float(r.lb)}",
+        f"  UB (tau.X):            {_fmt_float(r.ub)}",
+        f"  B (budget, tau.X):     {_fmt_float(r.best_tau)}",
+        f"  MIP gap (relative):    {gap_s}",
+        f"  Time (wall, full):     {repr(r.time_sec)} s",
+        f"  Time (Gurobi solve):   {repr(r.gurobi_runtime)} s",
+        f"  Status:                {_status_name(r.status)} ({r.status})",
+        f"  Nodes (B&B):           {r.nodes}",
+    ])
 
 
-def build_model_base(
-    c: List[List[float]],
-    u: List[List[int]],
-    m: int,
-    n: int,
-) -> Tuple[pl.LpProblem, Dict[Tuple[int, int, int], pl.LpVariable], pl.LpVariable]:
-    prob = pl.LpProblem("VRPCC_makespan", pl.LpMinimize)
-    tau = pl.LpVariable("tau", lowBound=0, cat=pl.LpContinuous)
+def _feasible_arcs(inst: Instance) -> List[Tuple[int, int, int]]:
+    n, m_veh = inst.n, inst.m
+    u = inst.u
+    arcs: List[Tuple[int, int, int]] = []
 
-    x: Dict[Tuple[int, int, int], pl.LpVariable] = {}
-    for k in range(m):
+    for k in range(m_veh):
         for i in range(n):
             for j in range(n):
                 if i == j:
                     continue
-                if j > 0 and u[k][j] == 0:
-                    continue
                 if i > 0 and u[k][i] == 0:
                     continue
-                x[(k, i, j)] = pl.LpVariable(f"x_{k}_{i}_{j}", cat=pl.LpBinary)
-
-    prob += tau
-
-    for k in range(m):
-        prob += (
-            pl.lpSum(
-                c[i][j] * x[(k, i, j)]
-                for i in range(n)
-                for j in range(n)
-                if (k, i, j) in x
-            )
-            <= tau,
-            f"maxlen_{k}",
-        )
-
-    for k in range(m):
-        prob += (
-            pl.lpSum(x[(k, 0, j)] for j in range(n) if (k, 0, j) in x) == 1,
-            f"leave_depot_{k}",
-        )
-
-    for k in range(m):
-        for v in range(n):
-            lin = [x[(k, i, v)] for i in range(n) if i != v and (k, i, v) in x]
-            lout = [x[(k, v, j)] for j in range(n) if j != v and (k, v, j) in x]
-            prob += pl.lpSum(lin) - pl.lpSum(lout) == 0, f"flow_{k}_{v}"
-
-    for j in range(1, n):
-        prob += (
-            pl.lpSum(
-                x[(k, i, j)]
-                for k in range(m)
-                for i in range(n)
-                if i != j and (k, i, j) in x
-            )
-            == 1,
-            f"visit_{j}",
-        )
-
-    for k in range(m):
-        for j in range(1, n):
-            if u[k][j] == 0:
-                continue
-            for i in range(n):
-                if i == j:
+                if j > 0 and u[k][j] == 0:
                     continue
-                if (k, i, j) in x:
-                    prob += x[(k, i, j)] <= u[k][j], f"comp_{k}_{i}_{j}"
+                arcs.append((k, i, j))
 
-    for k in range(m):
-        for i in range(1, n):
-            for j in range(i + 1, n):
-                if (k, i, j) in x and (k, j, i) in x:
-                    prob += (
-                        x[(k, i, j)] + x[(k, j, i)] <= 1,
-                        f"two_{k}_{i}_{j}",
-                    )
-
-    return prob, x, tau
+    return arcs
 
 
-def _has_integer_x(
-    x: Dict[Tuple[int, int, int], pl.LpVariable], tol: float = 1e-5
-) -> bool:
-    for v in x.values():
-        val = v.value()
-        if val is None:
-            return False
-        if abs(val - round(val)) > tol:
-            return False
-    return True
+def _extract_customer_edges(
+    m_veh: int,
+    x_val: Dict[Tuple[int, int, int], float],
+) -> Dict[int, List[Tuple[int, int]]]:
+    edges_by_vehicle: Dict[int, List[Tuple[int, int]]] = {k: [] for k in range(m_veh)}
+    for (k, i, j), val in x_val.items():
+        if val > 0.5 and i > 0 and j > 0:
+            edges_by_vehicle[k].append((i, j))
+    return edges_by_vehicle
+
+
+def _find_customer_subtours(
+    m_veh: int,
+    x_val: Dict[Tuple[int, int, int], float],
+) -> List[Tuple[int, List[int]]]:
+    edges_by_vehicle = _extract_customer_edges(m_veh, x_val)
+    subtours: List[Tuple[int, List[int]]] = []
+
+    for k in range(m_veh):
+        succ: Dict[int, int] = {}
+        for i, j in edges_by_vehicle[k]:
+            succ[i] = j
+
+        visited: Set[int] = set()
+
+        for start in list(succ.keys()):
+            if start in visited:
+                continue
+
+            path: List[int] = []
+            pos: Dict[int, int] = {}
+            cur = start
+
+            while cur in succ and cur not in visited:
+                if cur in pos:
+                    cycle = path[pos[cur]:]
+                    if len(cycle) >= 2:
+                        subtours.append((k, sorted(set(cycle))))
+                    break
+                pos[cur] = len(path)
+                path.append(cur)
+                cur = succ[cur]
+
+            for node in path:
+                visited.add(node)
+
+    unique: List[Tuple[int, List[int]]] = []
+    seen: Set[Tuple[int, Tuple[int, ...]]] = set()
+    for k, S in subtours:
+        key = (k, tuple(S))
+        if key not in seen:
+            seen.add(key)
+            unique.append((k, S))
+
+    return unique
 
 
 def solve_vrpcc(
-    inst: dict,
-    time_budget_sec: int = 300,
-    max_iters: int = 30,
-    per_solve_cap_sec: int = 90,
+    inst: Instance,
+    time_limit: float = 600.0,
+    mip_gap: float = 1e-4,
     verbose: bool = True,
-) -> SolveResult:
-    name = inst["name"]
-    n = inst["n"]
-    m = inst["m"]
-    c = inst["c"]
-    u = inst["u"]
-    t0 = time.perf_counter()
+) -> MIPReport:
+    t_wall0 = time.perf_counter()
+    n = inst.n
+    m_veh = inst.m
+    c = inst.c
 
-    prob, x, tau = build_model_base(c, u, m, n)
-    it = 0
-    last_msg = ""
+    arcs = _feasible_arcs(inst)
+    arc_set = set(arcs)
 
-    while it < max_iters:
-        it += 1
-        elapsed = time.perf_counter() - t0
-        remain = time_budget_sec - elapsed
-        if remain < 3:
-            if verbose:
-                print(
-                    f"  [{name}] het ngan sach ({time_budget_sec}s) sau {it - 1} vong.",
-                    flush=True,
-                )
-            return SolveResult(
-                name=name,
-                status="TimeBudget",
-                objective=float(pl.value(tau)) if tau.value() is not None else None,
-                tau=float(pl.value(tau)) if tau.value() is not None else None,
-                time_sec=time.perf_counter() - t0,
-                iterations=it - 1,
-                message=last_msg or "Het thoi gian tong (time_budget_sec).",
-                stop_reason="budget",
+    model = gp.Model("VRPCC")
+    model.Params.OutputFlag = 1 if verbose else 0
+    model.Params.TimeLimit = time_limit
+    model.Params.MIPGap = mip_gap
+    model.Params.LazyConstraints = 1
+
+    x = model.addVars(arcs, vtype=GRB.BINARY, name="x")
+    tau = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name="tau")
+    model.setObjective(tau, GRB.MINIMIZE)
+
+    # Makespan
+    for k in range(m_veh):
+        model.addConstr(
+            gp.quicksum(c[i][j] * x[k, i, j] for (kk, i, j) in arcs if kk == k) <= tau,
+            name=f"makespan_{k}",
+        )
+
+    # Mỗi xe dùng tối đa 1 route
+    for k in range(m_veh):
+        out_depot = gp.quicksum(x[k, 0, j] for j in range(1, n) if (k, 0, j) in arc_set)
+        in_depot = gp.quicksum(x[k, i, 0] for i in range(1, n) if (k, i, 0) in arc_set)
+        model.addConstr(out_depot <= 1, name=f"depot_out_le1_{k}")
+        model.addConstr(in_depot <= 1, name=f"depot_in_le1_{k}")
+
+    # Flow balance
+    for k in range(m_veh):
+        for v in range(n):
+            inflow = gp.quicksum(
+                x[k, i, v] for i in range(n) if i != v and (k, i, v) in arc_set
             )
-        tl = max(5, int(min(per_solve_cap_sec, remain)))
-        if verbose:
-            print(
-                f"  [{name}] vong SEC {it}: goi CBC toi da {tl}s "
-                f"(con lai ~{remain:.0f}s)...",
-                flush=True,
+            outflow = gp.quicksum(
+                x[k, v, j] for j in range(n) if j != v and (k, v, j) in arc_set
             )
-        t_solve = time.perf_counter()
-        solver = pl.PULP_CBC_CMD(msg=False, timeLimit=tl)
+            model.addConstr(inflow == outflow, name=f"flow_{k}_{v}")
+
+    # Mỗi khách được thăm đúng 1 lần
+    for j in range(1, n):
+        model.addConstr(
+            gp.quicksum(
+                x[k, i, j]
+                for k in range(m_veh)
+                for i in range(n)
+                if i != j and (k, i, j) in arc_set
+            ) == 1,
+            name=f"visit_once_{j}",
+        )
+
+    def _callback(cb_model, where):
+        if where != GRB.Callback.MIPSOL:
+            return
+
+        x_sol: Dict[Tuple[int, int, int], float] = {}
+        for key in arcs:
+            val = cb_model.cbGetSolution(x[key])
+            if val > 0.5:
+                x_sol[key] = val
+
+        for k, S in _find_customer_subtours(m_veh, x_sol):
+            lhs = gp.quicksum(
+                x[k, i, j]
+                for i in S
+                for j in S
+                if i != j and (k, i, j) in arc_set
+            )
+            cb_model.cbLazy(lhs <= len(S) - 1)
+
+    model.optimize(_callback)
+
+    gurobi_rt = model.Runtime
+    wall_sec = time.perf_counter() - t_wall0
+
+    try:
+        lb = model.ObjBound
+    except (gp.GurobiError, AttributeError, TypeError, ValueError):
+        lb = None
+
+    try:
+        gap = model.MIPGap
+    except (gp.GurobiError, AttributeError, TypeError, ValueError):
+        gap = None
+
+    try:
+        nodes = int(model.NodeCount)
+    except (gp.GurobiError, AttributeError, TypeError, ValueError):
+        nodes = 0
+
+    ub = None
+    best_tau = None
+    if model.SolCount > 0:
         try:
-            prob.solve(solver)
-        except KeyboardInterrupt:
-            if verbose:
-                print(
-                    f"\n  [{name}] Dung bang Ctrl+C trong luc CBC dang chay "
-                    f"(doi toi {tl}s hoac ket thuc som). Khong phai loi code.",
-                    flush=True,
-                )
-            raise
-        solve_sec = time.perf_counter() - t_solve
-        status = pl.LpStatus[prob.status]
+            # B (budget) va U (incumbent / UB): lay tu bien tau.X, khong dung ObjVal
+            tx = tau.X
+            ub = tx
+            best_tau = tx
+        except (gp.GurobiError, AttributeError, TypeError, ValueError):
+            try:
+                tx = tau.getAttr(GRB.Attr.X)
+                ub = tx
+                best_tau = tx
+            except (gp.GurobiError, AttributeError, TypeError, ValueError):
+                ub = None
+                best_tau = None
 
-        ok = prob.status in (pl.LpStatusOptimal,) or (
-            tau.value() is not None and _has_integer_x(x)
-        )
-
-        if verbose:
-            tv = pl.value(tau)
-            print(
-                f"  [{name}]   xong sau {solve_sec:.1f}s, status={status}, tau~={tv}",
-                flush=True,
-            )
-
-        if not ok:
-            obj = pl.value(tau) if tau.value() is not None else None
-            return SolveResult(
-                name=name,
-                status=status,
-                objective=float(obj) if obj is not None else None,
-                tau=float(obj) if obj is not None else None,
-                time_sec=time.perf_counter() - t0,
-                iterations=it,
-                message=last_msg or f"Không có nghiệm nguyên hợp lệ: {status}",
-                stop_reason="no_integer",
-            )
-
-        cuts_added = 0
-        for k in range(m):
-            xk = _xk_values(x, k, n)
-            S = find_subtour_customer_set(xk, n)
-            if S is None or len(S) < 2:
-                continue
-            nodes = sorted(S)
-            ssum = pl.lpSum(
-                x[(k, i, j)]
-                for i in nodes
-                for j in nodes
-                if i != j and (k, i, j) in x
-            )
-            prob += ssum <= len(S) - 1, f"sec_{it}_{k}_{'_'.join(map(str, nodes))}"
-            cuts_added += 1
-
-        if cuts_added == 0:
-            obj = float(pl.value(tau))
-            gap_note = ""
-            if prob.status != pl.LpStatusOptimal:
-                gap_note = " (CBC có thể chưa chứng minh tối ưu toàn cục)."
-            return SolveResult(
-                name=name,
-                status=status,
-                objective=obj,
-                tau=obj,
-                time_sec=time.perf_counter() - t0,
-                iterations=it,
-                message=f"Không còn subtour.{gap_note}",
-                stop_reason="ok",
-            )
-
-        last_msg = f"Lần {it}: thêm {cuts_added} SEC."
-        if verbose:
-            print(f"  [{name}]   them {cuts_added} cat SEC, giai lai...", flush=True)
-
-    obj = pl.value(tau)
-    return SolveResult(
-        name=name,
-        status="MaxIterations",
-        objective=float(obj) if obj is not None else None,
-        tau=float(obj) if obj is not None else None,
-        time_sec=time.perf_counter() - t0,
-        iterations=it,
-        message=last_msg or f"Het {max_iters} vong SEC (tang max_iters hoac time_budget).",
-        stop_reason="max_iters",
+    return MIPReport(
+        lb=lb,
+        ub=ub,
+        best_tau=best_tau,
+        mip_gap=gap,
+        time_sec=wall_sec,
+        gurobi_runtime=gurobi_rt,
+        status=int(model.Status),
+        nodes=nodes,
     )
-
-
-def solve_folder(
-    folder: str,
-    time_budget_sec: int = 300,
-    per_solve_cap_sec: int = 90,
-    max_iters: int = 30,
-    verbose: bool = True,
-) -> List[SolveResult]:
-    base = os.path.dirname(os.path.abspath(__file__))
-    dpath = os.path.join(base, folder)
-    names = ["C-n21-k6.json", "R-n21-k6.json", "RC-n21-k6.json"]
-    results: List[SolveResult] = []
-    for fn in names:
-        p = os.path.join(dpath, fn)
-        if not os.path.isfile(p):
-            raise FileNotFoundError(p)
-        inst = load_instance(p)
-        if verbose:
-            print(f"\n=== {inst['name']} ===", flush=True)
-        results.append(
-            solve_vrpcc(
-                inst,
-                time_budget_sec=time_budget_sec,
-                per_solve_cap_sec=per_solve_cap_sec,
-                max_iters=max_iters,
-                verbose=verbose,
-            )
-        )
-    return results
