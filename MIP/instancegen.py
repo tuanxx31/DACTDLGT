@@ -6,6 +6,7 @@ Generate raw VRPCC instances following Yu, Nagarajan, Shen (2018), Section 4:
 """
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import os
@@ -175,8 +176,100 @@ def build_all_default(root: str, prob_compat: float, seed_offset: int) -> None:
         inst = generate_instance(name, n, m, layout, prob_compat, seed)
         out = os.path.join(root, folder, f"{folder}.json")
         write_instance(inst, out)
+
+
+def build_family(
+    root: str,
+    *,
+    n_customers: int,
+    n_vehicles: int,
+    prob_compat: float,
+    seed_offset: int,
+) -> None:
+    """
+    Sinh 3 layout C/R/RC cho một cặp (n_customers, n_vehicles).
+    Tên theo paper style: c-nXX-kYY, r-nXX-kYY, RC-nXX-kYY.
+    """
+    n = n_customers + 1  # + depot
+    specs = [
+        (f"c-n{n_customers}-k{n_vehicles}", "C", 1000 + seed_offset),
+        (f"r-n{n_customers}-k{n_vehicles}", "R", 2000 + seed_offset),
+        (f"RC-n{n_customers}-k{n_vehicles}", "RC", 3000 + seed_offset),
+    ]
+    for folder, layout, seed in specs:
+        inst = generate_instance(folder, n, n_vehicles, layout, prob_compat, seed)
+        out = os.path.join(root, folder, f"{folder}.json")
+        write_instance(inst, out)
+
+
+def _parse_size_token(token: str) -> tuple[int, int]:
+    """
+    Parse "41:10" -> (41 customers, 10 vehicles).
+    """
+    parts = token.split(":")
+    if len(parts) != 2:
+        raise ValueError(f"Invalid size token '{token}', expected n_customers:n_vehicles")
+    n_customers = int(parts[0].strip())
+    n_vehicles = int(parts[1].strip())
+    if n_customers <= 0 or n_vehicles <= 0:
+        raise ValueError(f"Invalid positive values in token '{token}'")
+    return n_customers, n_vehicles
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(
+        description="Generate VRPCC MIP instances (paper-style names, C/R/RC)."
+    )
+    ap.add_argument(
+        "--size",
+        action="append",
+        default=[],
+        help="Instance size as n_customers:n_vehicles (repeatable), e.g. 21:6 --size 41:10",
+    )
+    ap.add_argument(
+        "--roots",
+        nargs="+",
+        default=["data", "data2"],
+        help="Output folders under MIP/, default: data data2",
+    )
+    ap.add_argument(
+        "--tight-p",
+        type=float,
+        default=0.3,
+        help="Compatibility probability for tight set (default 0.3)",
+    )
+    ap.add_argument(
+        "--relaxed-p",
+        type=float,
+        default=0.7,
+        help="Compatibility probability for relaxed set (default 0.7)",
+    )
+    args = ap.parse_args()
+
+    sizes: list[tuple[int, int]]
+    if args.size:
+        sizes = [_parse_size_token(tok) for tok in args.size]
+    else:
+        sizes = [(21, 6)]
+
+    base = os.path.dirname(os.path.abspath(__file__))
+    for root_name in args.roots:
+        out_root = os.path.join(base, root_name)
+        os.makedirs(out_root, exist_ok=True)
+        is_relaxed = root_name.lower().endswith("2")
+        p = args.relaxed_p if is_relaxed else args.tight_p
+        seed_offset_base = 10000 if is_relaxed else 0
+        for idx, (n_customers, n_vehicles) in enumerate(sizes):
+            build_family(
+                out_root,
+                n_customers=n_customers,
+                n_vehicles=n_vehicles,
+                prob_compat=p,
+                seed_offset=seed_offset_base + 100 * idx,
+            )
+    size_text = ", ".join([f"n{n}-k{m}" for n, m in sizes])
+    print(f"Wrote {size_text} to roots: {', '.join(args.roots)}")
+
+
 if __name__ == "__main__":
-    _base = os.path.dirname(os.path.abspath(__file__))
-    build_all_default(os.path.join(_base, "data"), 0.3, 0)
-    build_all_default(os.path.join(_base, "data2"), 0.7, 10000)
-    print(f"Wrote {_base}/data and .../data2 (c, r, RC × n21-k6)")
+    main()

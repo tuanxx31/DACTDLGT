@@ -10,6 +10,7 @@ Mặc định gói nhanh (~≤2 phút với instance nhỏ trong vrpcc/data/inst
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import sys
 import time
@@ -42,6 +43,125 @@ def _collect_json_files_recursive(root_dir: Path) -> list[Path]:
     )
 
 
+def _to_float_or_none(x: object) -> float | None:
+    if x is None:
+        return None
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def _fmt_csv_num(x: float | None) -> str:
+    if x is None:
+        return "-"
+    return f"{x:.4f}"
+
+
+def _collect_default_light_instances(root: Path) -> list[Path]:
+    """
+    Mặc định test nhanh nhóm nhẹ nhất trong paper: *-n21-k6.
+    Ưu tiên thư mục MIP/data, fallback về vrpcc/data/instances.
+    """
+    candidates = _collect_json_files_recursive(root / "MIP" / "data")
+    light = [p for p in candidates if "n21-k6" in p.stem.lower()]
+    if light:
+        return sorted(light)
+
+    candidates = _collect_json_files_recursive(root / "vrpcc" / "data" / "instances")
+    light = [p for p in candidates if "n21-k6" in p.stem.lower()]
+    return sorted(light)
+
+
+def _write_comparison_csv(rows: list[dict], out_csv: Path) -> None:
+    headers = [
+        "Instance",
+        "LB1",
+        "UB1",
+        "Time_10min_s",
+        "LB2",
+        "UB2",
+        "Time_2hours_s",
+        "Obj",
+        "Time_algo_s",
+        "Obj_over_LB2",
+        "Obj_over_UB2",
+    ]
+    with out_csv.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        writer.writeheader()
+        for r in rows:
+            writer.writerow({
+                "Instance": r["Instance"],
+                "LB1": _fmt_csv_num(r["LB1"]),
+                "UB1": _fmt_csv_num(r["UB1"]),
+                "Time_10min_s": _fmt_csv_num(r["Time_10min_s"]),
+                "LB2": _fmt_csv_num(r["LB2"]),
+                "UB2": _fmt_csv_num(r["UB2"]),
+                "Time_2hours_s": _fmt_csv_num(r["Time_2hours_s"]),
+                "Obj": _fmt_csv_num(r["Obj"]),
+                "Time_algo_s": _fmt_csv_num(r["Time_algo_s"]),
+                "Obj_over_LB2": _fmt_csv_num(r["Obj_over_LB2"]),
+                "Obj_over_UB2": _fmt_csv_num(r["Obj_over_UB2"]),
+            })
+
+
+def _flush_incremental_outputs(out_dir: Path, rows: list[dict]) -> None:
+    """
+    Ghi ket qua trung gian sau moi instance de co CSV/JSON ngay lap tuc.
+    """
+    summary_path = out_dir / "summary.json"
+    summary_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    csv_path = out_dir / "comparison_table.csv"
+    _write_comparison_csv(rows, csv_path)
+
+
+def _solve_mip_report_from_mip_module(
+    instance_path: Path,
+    time_limit_sec: float,
+    verbose: bool,
+) -> tuple[str, float | None, float | None, float]:
+    """
+    Dùng solver MIP gốc trong thư mục MIP (sparse arcs) để giảm kích thước model
+    so với solver vrpcc/mip_gurobi.py.
+    Trả về: (status, lb, ub, time_sec).
+    """
+    mip_dir = _ROOT / "MIP"
+    if str(mip_dir) not in sys.path:
+        sys.path.insert(0, str(mip_dir))
+    from instancegen import load_instance  # type: ignore
+    from vrpcc_mip import solve_vrpcc  # type: ignore
+
+    inst_mip = load_instance(str(instance_path))
+    rep = solve_vrpcc(inst_mip, time_limit=float(time_limit_sec), verbose=bool(verbose))
+    return _status_name_mip_report(rep.status), _to_float_or_none(rep.lb), _to_float_or_none(rep.ub), float(rep.time_sec)
+
+
+def _status_name_mip_report(status_code: int) -> str:
+    try:
+        import gurobipy as gp  # type: ignore
+    except Exception:
+        return str(status_code)
+    names = {
+        gp.GRB.LOADED: "LOADED",
+        gp.GRB.OPTIMAL: "OPTIMAL",
+        gp.GRB.INFEASIBLE: "INFEASIBLE",
+        gp.GRB.INF_OR_UNBD: "INF_OR_UNBD",
+        gp.GRB.UNBOUNDED: "UNBOUNDED",
+        gp.GRB.CUTOFF: "CUTOFF",
+        gp.GRB.ITERATION_LIMIT: "ITERATION_LIMIT",
+        gp.GRB.NODE_LIMIT: "NODE_LIMIT",
+        gp.GRB.TIME_LIMIT: "TIME_LIMIT",
+        gp.GRB.SOLUTION_LIMIT: "SOLUTION_LIMIT",
+        gp.GRB.INTERRUPTED: "INTERRUPTED",
+        gp.GRB.NUMERIC: "NUMERIC",
+        gp.GRB.SUBOPTIMAL: "SUBOPTIMAL",
+        gp.GRB.INPROGRESS: "INPROGRESS",
+        gp.GRB.USER_OBJ_LIMIT: "USER_OBJ_LIMIT",
+    }
+    return names.get(status_code, str(status_code))
+
+
 def _run_approx(
     inst: VRPCCInstance,
     beta: float,
@@ -58,7 +178,8 @@ def _run_approx(
     if use_ls:
         routes = local_search(inst, routes)
     elapsed = time.perf_counter() - t0
-    obj = inst.makespan(routes)
+    route_costs = [inst.tour_length(r, k) if len(r) >= 2 else 0.0 for k, r in enumerate(routes)]
+    obj = max(route_costs) if route_costs else 0.0
     return routes, elapsed, obj, result.B_upper
 
 
@@ -125,6 +246,11 @@ def main() -> None:
         action="store_true",
         help="Bật trace file ngay cả khi có --no-algorithm-log (tương thích app.py)",
     )
+    ap.add_argument(
+        "--all-instances",
+        action="store_true",
+        help="Nếu bật, chạy toàn bộ instance tìm thấy. Mặc định chạy nhóm nhẹ n21-k6.",
+    )
     args = ap.parse_args()
 
     algorithm_trace = (not args.no_algorithm_log) or args.verbose
@@ -142,8 +268,11 @@ def main() -> None:
             dd = d if d.is_absolute() else (_ROOT / d)
             paths.extend(_collect_json_files_recursive(dd))
     if not paths:
-        inst_dir = _ROOT / "vrpcc" / "data" / "instances"
-        paths = _collect_json_files_recursive(inst_dir)
+        if args.all_instances:
+            inst_dir = _ROOT / "vrpcc" / "data" / "instances"
+            paths = _collect_json_files_recursive(inst_dir)
+        else:
+            paths = _collect_default_light_instances(_ROOT)
 
     if not paths:
         print("Không có instance. Chạy: python -m vrpcc.data.generate_instances")
@@ -153,7 +282,7 @@ def main() -> None:
     if algorithm_trace:
         log_path = args.log_file if args.log_file is not None else args.out_dir / "approx_algorithm.log"
         configure_approx_trace_file(log_path, mode="w")
-        print(f"Trace thuật toán → {log_path.resolve()}", flush=True)
+        print(f"Trace algorithm -> {log_path.resolve()}", flush=True)
 
     results: list[dict] = []
     use_ls = not args.no_local_search
@@ -173,15 +302,27 @@ def main() -> None:
 
         if args.skip_mip:
             row = {
-                "name": name,
+                "Instance": name,
+                "LB1": None,
+                "UB1": None,
+                "Time_10min_s": None,
+                "LB2": None,
+                "UB2": None,
+                "Time_2hours_s": None,
+                "Obj": approx_obj,
+                "Time_algo_s": approx_time,
+                "Obj_over_LB2": None,
+                "Obj_over_UB2": None,
                 "file": str(p),
-                "approx_obj": approx_obj,
-                "approx_time": approx_time,
                 "B": B,
                 "mip_skipped": True,
+                # Backward compatibility for plotting utility
+                "approx_obj": approx_obj,
+                "approx_time": approx_time,
             }
             results.append(row)
             print(json.dumps(row, indent=2, ensure_ascii=False))
+            _flush_incremental_outputs(args.out_dir, results)
             if inst.coords is not None:
                 plot_routes_map(
                     inst,
@@ -191,48 +332,69 @@ def main() -> None:
                 )
             continue
 
-        from vrpcc.mip_gurobi import solve_vrpcc_mip
+        # Ưu tiên solver MIP trong thư mục MIP để khớp benchmark paper và tránh model quá lớn.
+        # Nếu một instance vượt license giới hạn kích thước, giữ batch chạy tiếp.
+        status1 = "SKIPPED"
+        status2 = "SKIPPED"
+        mip_bound_1 = None
+        mip_obj_1 = None
+        mip_time_1 = None
+        mip_bound_2 = None
+        mip_obj_2 = None
+        mip_time_2 = None
+        mip_error = None
+        try:
+            status1, mip_bound_1, mip_obj_1, mip_time_1 = _solve_mip_report_from_mip_module(
+                p,
+                time_limit_sec=float(args.mip_limit_1),
+                verbose=bool(args.verbose_mip),
+            )
+            status2 = status1
+            mip_obj_2 = mip_obj_1
+            mip_bound_2 = mip_bound_1
+            mip_time_2 = mip_time_1
+            if args.mip_limit_2 and args.mip_limit_2 > 0 and args.mip_limit_2 != args.mip_limit_1:
+                status2, mip_bound_2, mip_obj_2, mip_time_2 = _solve_mip_report_from_mip_module(
+                    p,
+                    time_limit_sec=float(args.mip_limit_2),
+                    verbose=bool(args.verbose_mip),
+                )
+        except Exception as exc:  # keep robust batch export
+            mip_error = str(exc)
+            status1 = "MIP_ERROR"
+            status2 = "MIP_ERROR"
 
-        r1 = solve_vrpcc_mip(inst, time_limit_sec=args.mip_limit_1, verbose=args.verbose_mip)
-        mip_obj_1 = r1.obj
-        mip_bound_1 = r1.bound
-        mip_time_1 = r1.time_sec
-
-        mip_obj_2 = mip_obj_1
-        mip_bound_2 = mip_bound_1
-        mip_time_2 = 0.0
-        r2 = r1
-        if args.mip_limit_2 and args.mip_limit_2 > 0 and args.mip_limit_2 != args.mip_limit_1:
-            r2 = solve_vrpcc_mip(inst, time_limit_sec=args.mip_limit_2, verbose=args.verbose_mip)
-            mip_obj_2 = r2.obj
-            mip_bound_2 = r2.bound
-            mip_time_2 = r2.time_sec
-
-        lb2 = mip_bound_2
-        ub2 = mip_obj_2
+        lb1 = _to_float_or_none(mip_bound_1)
+        ub1 = _to_float_or_none(mip_obj_1)
+        lb2 = _to_float_or_none(mip_bound_2)
+        ub2 = _to_float_or_none(mip_obj_2)
         row = {
-            "name": name,
+            "Instance": name,
+            "LB1": lb1,
+            "UB1": ub1,
+            "Time_10min_s": _to_float_or_none(mip_time_1),
+            "LB2": lb2,
+            "UB2": ub2,
+            "Time_2hours_s": _to_float_or_none(mip_time_2),
+            "Obj": _to_float_or_none(approx_obj),
+            "Time_algo_s": _to_float_or_none(approx_time),
+            "Obj_over_LB2": (approx_obj / lb2) if lb2 and lb2 > 0 else None,
+            "Obj_over_UB2": (approx_obj / ub2) if ub2 and ub2 > 0 else None,
             "file": str(p),
+            "B": B,
+            "mip_status_1": status1,
+            "mip_status_2": status2,
+            "mip_error": mip_error,
+            # Backward compatibility for plotting utility
             "approx_obj": approx_obj,
             "approx_time": approx_time,
-            "B": B,
-            "ratio_obj_lb2": (approx_obj / lb2) if lb2 and lb2 > 0 else None,
-            "ratio_obj_ub2": (approx_obj / ub2) if ub2 and ub2 > 0 else None,
-            "mip_status_1": r1.status,
-            "mip_time_1": mip_time_1,
-            "mip_obj_1": mip_obj_1,
-            "mip_bound_1": mip_bound_1,
-            "mip_status_2": r2.status,
-            "mip_time_2": mip_time_2,
-            "mip_obj_2": mip_obj_2,
-            "mip_bound_2": mip_bound_2,
+            "mip_time": mip_time_1,
+            "mip_obj": mip_obj_1,
         }
         results.append(row)
 
-        results[-1]["mip_time"] = mip_time_1
-        results[-1]["mip_obj"] = mip_obj_1
-
         print(json.dumps(row, indent=2, ensure_ascii=False))
+        _flush_incremental_outputs(args.out_dir, results)
 
         if inst.coords is not None:
             plot_routes_map(
@@ -241,19 +403,16 @@ def main() -> None:
                 args.out_dir / f"routes_paper_{name}.png",
                 title=f"Thuật toán bài báo (approx) — {name}",
             )
-            if r1.routes:
-                plot_routes_map(
-                    inst,
-                    r1.routes,
-                    args.out_dir / f"routes_mip_reference_{name}.png",
-                    title=f"MIP tham chiếu — {name}",
-                )
 
     summary_path = args.out_dir / "summary.json"
-    summary_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
+    csv_path = args.out_dir / "comparison_table.csv"
     print("Wrote", summary_path)
+    print("Wrote", csv_path)
 
-    plot_from_results_list(results, args.out_dir, include_mip=not args.skip_mip)
+    try:
+        plot_from_results_list(results, args.out_dir, include_mip=not args.skip_mip)
+    except Exception as exc:
+        print(f"Skip plotting due to incompatible/partial rows: {exc}")
 
 
 if __name__ == "__main__":
