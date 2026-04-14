@@ -1,0 +1,402 @@
+
+
+
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en">> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if IE 9 ]><html class="ie ie9" lang="en"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <title>Solomon benchmark</title>
+    <meta charset="UTF-8">
+
+
+<script id="CookieConsent" src="https://policy.app.cookieinformation.com/uc.js" data-culture="EN" type="text/javascript"></script>
+
+<script>
+    (function(){
+        try {
+            window.CookieInformation.youtubeCategorySdk = 'cookie_cat_marketing';
+            window.CookieInformation.enableYoutubeNotVisibleDescription = true;
+            window.CookieInformation.youtubeNotVisibleDescription = "You have to consent to marketing cookies to see this content. Click here to renew consent";
+        } catch (err){
+            console.error(err);
+        }
+    })();
+</script>
+    <script type="text/javascript" src="/Legacy/Script/json2.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.js"></script>
+    <script type="text/javascript" src="/Legacy/Script/querystring.js"></script>
+    <script type="text/javascript" src="/Legacy/Script/fancybox-2/jquery.fancybox.pack.js?v=2.1.5"></script>
+    <script type="text/javascript" src="/Legacy/Script/fancybox-2/helpers/jquery.fancybox-thumbs.js?v=1.0.7"></script>
+    <script type="text/javascript" src="/Legacy/Script/multimedia.js"></script>
+    <script type="text/javascript" src="/Legacy/Script/modernizr.js?v10.0.0.22645"></script>
+    <script type="text/javascript" src="/Legacy/scripts/oldprojectweb.js?v10.0.0.22645"></script>
+
+    <link rel="stylesheet" type="text/css" href="/Legacy/Script/fancybox-2/jquery.fancybox.css?v=2.1.5" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/Script/fancybox-2/helpers/jquery.fancybox-thumbs.css?v=1.0.7" />
+
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/Themes/Editor.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/Themes/Structure.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/Themes/Specific.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/Themes/Blue/Specific.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/Styles/WebForms/Themes/Jquery/sintef.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/multimedia.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/cookieconsent.css" />
+
+    <script type="text/javascript" src="/Util/javascript/print.js"></script>
+
+
+    <link href="https://www.sintef.no/projectweb/top/vrptw/solomon-benchmark/" rel="canonical" />
+
+    <!-- Favicons-->
+    <link rel="shortcut icon" href="/favicon.ico?v=xQdRx5jj52">
+
+    <!-- Meta tags for sharing -->
+    <meta name="facebook-domain-verification" content="v8z4lg9m323xwkeavxrm1v3gcxp70a" />
+
+    <meta property="og:title" content="Solomon benchmark" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://www.sintef.no/projectweb/top/vrptw/solomon-benchmark/" />
+    <meta property="og:site_name" content="Solomon benchmark" />
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="SINTEF">
+    <meta name="twitter:creator" content="SINTEF" />
+    <meta name="twitter:title" content="Solomon benchmark">
+
+
+
+    <meta name="PageType" content="OldArticlePage" />
+    <meta name="PageCategory" content="Nyheter" />
+
+     
+    
+    
+<script type="text/javascript">var appInsights=window.appInsights||function(config){function t(config){i[config]=function(){var t=arguments;i.queue.push(function(){i[config].apply(i,t)})}}var i={config:config},u=document,e=window,o="script",s="AuthenticatedUserContext",h="start",c="stop",l="Track",a=l+"Event",v=l+"Page",r,f;setTimeout(function(){var t=u.createElement(o);t.src=config.url||"https://js.monitor.azure.com/scripts/a/ai.0.js";u.getElementsByTagName(o)[0].parentNode.appendChild(t)});try{i.cookie=u.cookie}catch(y){}for(i.queue=[],r=["Event","Exception","Metric","PageView","Trace","Dependency"];r.length;)t("track"+r.pop());return t("set"+s),t("clear"+s),t(h+a),t(c+a),t(h+v),t(c+v),t("flush"),config.disableExceptionTracking||(r="onerror",t("_"+r),f=e[r],e[r]=function(config,t,u,e,o){var s=f&&f(config,t,u,e,o);return s!==!0&&i["_"+r](config,t,u,e,o),s}),i}({instrumentationKey:"a6bf6747-f7a0-4eb1-b9ce-2f80407bf39f",sdkExtension:"a"});window.appInsights=appInsights;appInsights.queue&&appInsights.queue.length===0&&appInsights.trackPageView();</script></head>
+
+<body id="projectweb">
+    
+
+
+
+<!-- Google Tag Manager -->
+<noscript>
+    <iframe src="//www.googletagmanager.com/ns.html?id=GTM-KDHGJL"
+            height="0"
+            width="0"
+            style="display:none;visibility:hidden">
+    </iframe>
+</noscript>
+<script>
+    (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s),
+            dl = l != 'dataLayer' ? '&l=' + l : '';
+
+        j.async = true;
+        j.src = '//www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+    })(window, document, 'script', 'dataLayer', 'GTM-KDHGJL');
+</script>
+<!-- End Google Tag Manager -->
+    
+
+    <noscript class="no-script-warning">
+        Your browser doesn&#39;t have JavaScript enabled. The website works, but some functionality may be limited
+    </noscript>
+
+    <div id="ContainerDiv" class="">
+		<div id="MainContainerDivBG">
+            <div id="MainContainerDiv">
+                <div id="TopContainerWide">
+                    <div id="TopContainer">
+                        
+<div class="SearchSection">
+    <form method="get" action="/projectweb/top/search/">
+        <input type="hidden" name="root" value="18563" />
+        <input id="project-search" type="search" name="query" title="Search" class="QuickSearchInput" autocomplete="Off">
+        <input type="submit" value="SEARCH" class="QuickSearchButton">
+    </form>
+</div>
+                        
+                    </div>
+                </div>
+
+                <div id="ContainerFromHeader">
+                    
+                    
+
+
+    <div id="AlernativeBreadCrumb">
+        <div id="BreadCrumbWide">
+
+<div id="BreadCrumb">
+        <span class="BreadCrumbLabel">
+            You are here:
+        </span>
+        <span id="BreadCrumbPath">
+                <a href="/projectweb/top/" class="">
+                    TOP
+                </a>
+                    <span>/</span>
+                <a href="/projectweb/top/vrptw/" class="">
+                    VRPTW
+                </a>
+                    <span>/</span>
+                <a href="/projectweb/top/vrptw/solomon-benchmark/" class="Selected">
+                    Solomon benchmark
+                </a>
+        </span>
+</div>
+
+        </div>
+    </div>
+
+
+                    <table id="FullRegion" border="0" cellspacing="0" cellpadding="0" width="100%">
+                        <tr class="MainRow">
+                            
+<td id="LeftRegion" rowspan="2">
+    <div id="LeftRegionDiv">
+        <div id="LeftMenuDiv">
+            <div class="linkMenu">
+                <ul>
+                        <li>
+                            
+
+
+
+<a href="/projectweb/top/nearp/" class="">
+    NEARP / MCGRP
+</a>
+
+                        </li>
+                        <li>
+                            
+
+
+
+<a href="/projectweb/top/pdptw/" class="">
+    PDPTW
+</a>
+
+                        </li>
+                        <li>
+                            
+
+
+
+<a href="/projectweb/top/vrptw/" class="expanded">
+    VRPTW
+</a>
+
+                                <ul>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/documentation2/" class="">
+    Documentation
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/solomon-benchmark/" class="selected">
+    Solomon benchmark
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/25-customers/" class="">
+    25 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/50-customers/" class="">
+    50 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/100-customers/" class="">
+    100 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/homberger-benchmark/" class="">
+    Gehring &amp; Homberger benchmark
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/200-customers/" class="">
+    200 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/400-customers/" class="">
+    400 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/600-customers/" class="">
+    600 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/800-customers/" class="">
+    800 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/1000-customers/" class="">
+    1000 customers
+</a>
+                                        </li>
+                                </ul>
+                        </li>
+                        <li>
+                            
+
+
+
+<a href="/projectweb/top/contact-information/" class="">
+    Contact information
+</a>
+
+                        </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</td>
+
+<script type="text/javascript">
+    jQuery(document).ready(function ($) {
+        $("a.selected.expanded").click(function (event) {
+            event.preventDefault();
+            $(this).removeClass('expanded').addClass('expandable');
+            $(this).siblings('ul').hide();
+            $(this).unbind('click');
+        });
+    });
+</script>
+
+                            <td id="MainArea">
+                                <div id="MainAreaDiv">
+                                    <a id="content"></a>
+                                    <div id="voicearea" class="TextContent">
+    
+
+
+<div class="Ingress">
+    <div class="Ingress">
+        <div class="Title">
+            Solomon benchmark
+        </div>
+        <div class="Body">
+        </div>
+    </div>
+
+</div>
+    
+<div class="rich-text-field">
+<p align="justify"><strong>Here you find pointers to instance definitions and&nbsp; best known solutions for the 25 and 50 customer instances of Solomon's VRPTW benchmark problems from 1987. For the 100 customer instances you will find a table of the best known results, as reported to us. The version reported here has a hierarchical objective: 1) Minimize number of vehicles 2) Minimize total distance.&nbsp;</strong><strong>Distance is Euclidean, and the value of travel time is equal to the value of distance between two nodes.&nbsp;</strong><strong>Distance and time should be calculated with double precision, total distance results are rounded to two decimals in the tables below. Exact methods typically use a monolithic total distance objective and use integral or low precision distance and time calculations. Hence, results are not directly comparable.</strong></p>
+</div>
+</div>
+
+
+
+
+
+<p class="metatext">
+    <span>Published </span>
+    <span>April 18, 2008</span>
+</p>
+                                </div>
+                            </td>
+
+
+
+
+<td id="RightRegion" rowspan="2">
+    <div id="RightRegionDiv">
+        
+
+
+        
+
+
+        
+
+
+        
+
+    </div>
+</td>                        </tr>
+                        <tr>
+                            <td id="FooterArea"></td>
+                        </tr>
+                    </table>
+
+                    <div id="FooterDiv">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="text/javascript" src="https://dl.episerver.net/13.6.1/epi-util/find.js"></script>
+<script type="text/javascript">
+if(typeof FindApi === 'function'){var api = new FindApi();api.setApplicationUrl('/');api.setServiceApiBaseUrl('/find_v2/');api.processEventFromCurrentUri();api.bindWindowEvents();api.bindAClickEvent();api.sendBufferedEvents();}
+</script>
+
+</body>
+</html>

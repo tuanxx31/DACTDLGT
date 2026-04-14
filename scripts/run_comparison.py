@@ -251,6 +251,11 @@ def main() -> None:
         action="store_true",
         help="Nếu bật, chạy toàn bộ instance tìm thấy. Mặc định chạy nhóm nhẹ n21-k6.",
     )
+    ap.add_argument(
+        "--resume",
+        action="store_true",
+        help="Tiếp tục từ OUT_DIR/summary.json: bỏ qua instance đã có kết quả.",
+    )
     args = ap.parse_args()
 
     algorithm_trace = (not args.no_algorithm_log) or args.verbose
@@ -279,13 +284,59 @@ def main() -> None:
         sys.exit(1)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
+    summary_path = args.out_dir / "summary.json"
+
+    existing_rows: list[dict] = []
+    done_files: set[str] = set()
+    if args.resume and summary_path.is_file():
+        try:
+            loaded = json.loads(summary_path.read_text(encoding="utf-8"))
+            if isinstance(loaded, list):
+                for row in loaded:
+                    if isinstance(row, dict):
+                        existing_rows.append(row)
+                        f = row.get("file")
+                        if isinstance(f, str) and f:
+                            try:
+                                done_files.add(str(Path(f).resolve()))
+                            except Exception:
+                                done_files.add(f)
+                if existing_rows:
+                    print(
+                        f"Resume mode: loaded {len(existing_rows)} rows from {summary_path.resolve()}",
+                        flush=True,
+                    )
+        except Exception as exc:
+            print(f"Warning: cannot load resume file {summary_path}: {exc}", flush=True)
+
+    if done_files:
+        filtered: list[Path] = []
+        skipped = 0
+        for p in paths:
+            rp = str(p.resolve())
+            if rp in done_files:
+                skipped += 1
+                continue
+            filtered.append(p)
+        paths = filtered
+        if skipped:
+            print(f"Resume mode: skipped {skipped} completed instances", flush=True)
+
     if algorithm_trace:
         log_path = args.log_file if args.log_file is not None else args.out_dir / "approx_algorithm.log"
-        configure_approx_trace_file(log_path, mode="w")
-        print(f"Trace algorithm -> {log_path.resolve()}", flush=True)
+        log_mode = "a" if args.resume and log_path.exists() else "w"
+        configure_approx_trace_file(log_path, mode=log_mode)
+        print(f"Trace algorithm ({log_mode}) -> {log_path.resolve()}", flush=True)
 
-    results: list[dict] = []
+    results: list[dict] = list(existing_rows)
     use_ls = not args.no_local_search
+
+    if not paths:
+        print("Không còn instance mới để chạy (resume hoàn tất).")
+        _flush_incremental_outputs(args.out_dir, results)
+        print("Wrote", summary_path)
+        print("Wrote", args.out_dir / "comparison_table.csv")
+        return
 
     for p in paths:
         if p.name == "manifest.json":
@@ -404,7 +455,6 @@ def main() -> None:
                 title=f"Thuật toán bài báo (approx) — {name}",
             )
 
-    summary_path = args.out_dir / "summary.json"
     csv_path = args.out_dir / "comparison_table.csv"
     print("Wrote", summary_path)
     print("Wrote", csv_path)

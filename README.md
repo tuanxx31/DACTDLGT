@@ -117,3 +117,29 @@ python MIP/instancegen.py --size 21:6 --size 41:10 --size 61:14 --size 81:18 --s
 | `OUT_DIR/approx_algorithm.log` | Trace quá trình thuật toán xấp xỉ |
 
 `OUT_DIR` là giá trị bạn truyền cho `--out-dir` khi chạy `scripts/run_comparison.py`.
+
+---
+
+## Raw Solomon dataset (provenance)
+
+Raw source files, 25/50/100 subsets, and requested `n21/n41/n61/n81/n101` mappings are prepared in:
+
+- `raw_data/solomon/`
+
+Full provenance and assumptions are documented in:
+
+- `raw_data/solomon/README.md`
+- `raw_data/solomon/source_manifest.csv`
+
+---
+
+## Paper-style VRPCC instances
+
+Paper-style VRPCC JSON instances (generated from Solomon coordinates with compatibility `p=0.3/0.7`) are available at:
+
+- `MIP/data_paper_101/` (suite up to `n101`)
+- `MIP/data_paper_26/` (suite up to `n26`)
+
+Details, assumptions, and regenerate command:
+
+- `MIP/PAPER_DATASET_README.md`

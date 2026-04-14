@@ -1,0 +1,847 @@
+
+
+
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en">> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if IE 9 ]><html class="ie ie9" lang="en"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <title>100 customers</title>
+    <meta charset="UTF-8">
+
+
+<script id="CookieConsent" src="https://policy.app.cookieinformation.com/uc.js" data-culture="EN" type="text/javascript"></script>
+
+<script>
+    (function(){
+        try {
+            window.CookieInformation.youtubeCategorySdk = 'cookie_cat_marketing';
+            window.CookieInformation.enableYoutubeNotVisibleDescription = true;
+            window.CookieInformation.youtubeNotVisibleDescription = "You have to consent to marketing cookies to see this content. Click here to renew consent";
+        } catch (err){
+            console.error(err);
+        }
+    })();
+</script>
+    <script type="text/javascript" src="/Legacy/Script/json2.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.js"></script>
+    <script type="text/javascript" src="/Legacy/Script/querystring.js"></script>
+    <script type="text/javascript" src="/Legacy/Script/fancybox-2/jquery.fancybox.pack.js?v=2.1.5"></script>
+    <script type="text/javascript" src="/Legacy/Script/fancybox-2/helpers/jquery.fancybox-thumbs.js?v=1.0.7"></script>
+    <script type="text/javascript" src="/Legacy/Script/multimedia.js"></script>
+    <script type="text/javascript" src="/Legacy/Script/modernizr.js?v10.0.0.22645"></script>
+    <script type="text/javascript" src="/Legacy/scripts/oldprojectweb.js?v10.0.0.22645"></script>
+
+    <link rel="stylesheet" type="text/css" href="/Legacy/Script/fancybox-2/jquery.fancybox.css?v=2.1.5" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/Script/fancybox-2/helpers/jquery.fancybox-thumbs.css?v=1.0.7" />
+
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/Themes/Editor.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/Themes/Structure.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/Themes/Specific.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/Themes/Blue/Specific.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/Styles/WebForms/Themes/Jquery/sintef.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/multimedia.css" />
+    <link rel="stylesheet" type="text/css" href="/Legacy/styles/WebForms/cookieconsent.css" />
+
+    <script type="text/javascript" src="/Util/javascript/print.js"></script>
+
+
+    <link href="https://www.sintef.no/projectweb/top/vrptw/100-customers/" rel="canonical" />
+
+    <!-- Favicons-->
+    <link rel="shortcut icon" href="/favicon.ico?v=xQdRx5jj52">
+
+    <!-- Meta tags for sharing -->
+    <meta name="facebook-domain-verification" content="v8z4lg9m323xwkeavxrm1v3gcxp70a" />
+
+    <meta property="og:title" content="100 customers" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://www.sintef.no/projectweb/top/vrptw/100-customers/" />
+    <meta property="og:site_name" content="100 customers" />
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="SINTEF">
+    <meta name="twitter:creator" content="SINTEF" />
+    <meta name="twitter:title" content="100 customers">
+
+        <meta name="description" content="Here you find instance definitions and best known solutions for the 100 customer instances of Solomon&#39;s VRPTW benchmark problems from 1987. The version reported here has a hierarchical objective: 1) Minimize number of vehicles 2) Minimize total distance. Distance and time should be calculated with double precision, total distance results are rounded to two decimals. Exact methods typically use a monolithic total distance objective and use integral or low precision distance and time calculations. Hence, results are not directly comparable.
+By clicking on an instance name in blue, you will open a file with a specification&#160;of the detailed solution." />
+
+
+    <meta name="PageType" content="OldArticlePage" />
+    <meta name="PageCategory" content="Nyheter" />
+
+     
+    
+    
+<script type="text/javascript">var appInsights=window.appInsights||function(config){function t(config){i[config]=function(){var t=arguments;i.queue.push(function(){i[config].apply(i,t)})}}var i={config:config},u=document,e=window,o="script",s="AuthenticatedUserContext",h="start",c="stop",l="Track",a=l+"Event",v=l+"Page",r,f;setTimeout(function(){var t=u.createElement(o);t.src=config.url||"https://js.monitor.azure.com/scripts/a/ai.0.js";u.getElementsByTagName(o)[0].parentNode.appendChild(t)});try{i.cookie=u.cookie}catch(y){}for(i.queue=[],r=["Event","Exception","Metric","PageView","Trace","Dependency"];r.length;)t("track"+r.pop());return t("set"+s),t("clear"+s),t(h+a),t(c+a),t(h+v),t(c+v),t("flush"),config.disableExceptionTracking||(r="onerror",t("_"+r),f=e[r],e[r]=function(config,t,u,e,o){var s=f&&f(config,t,u,e,o);return s!==!0&&i["_"+r](config,t,u,e,o),s}),i}({instrumentationKey:"a6bf6747-f7a0-4eb1-b9ce-2f80407bf39f",sdkExtension:"a"});window.appInsights=appInsights;appInsights.queue&&appInsights.queue.length===0&&appInsights.trackPageView();</script></head>
+
+<body id="projectweb">
+    
+
+
+
+<!-- Google Tag Manager -->
+<noscript>
+    <iframe src="//www.googletagmanager.com/ns.html?id=GTM-KDHGJL"
+            height="0"
+            width="0"
+            style="display:none;visibility:hidden">
+    </iframe>
+</noscript>
+<script>
+    (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s),
+            dl = l != 'dataLayer' ? '&l=' + l : '';
+
+        j.async = true;
+        j.src = '//www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+    })(window, document, 'script', 'dataLayer', 'GTM-KDHGJL');
+</script>
+<!-- End Google Tag Manager -->
+    
+
+    <noscript class="no-script-warning">
+        Your browser doesn&#39;t have JavaScript enabled. The website works, but some functionality may be limited
+    </noscript>
+
+    <div id="ContainerDiv" class="">
+		<div id="MainContainerDivBG">
+            <div id="MainContainerDiv">
+                <div id="TopContainerWide">
+                    <div id="TopContainer">
+                        
+<div class="SearchSection">
+    <form method="get" action="/projectweb/top/search/">
+        <input type="hidden" name="root" value="18563" />
+        <input id="project-search" type="search" name="query" title="Search" class="QuickSearchInput" autocomplete="Off">
+        <input type="submit" value="SEARCH" class="QuickSearchButton">
+    </form>
+</div>
+                        
+                    </div>
+                </div>
+
+                <div id="ContainerFromHeader">
+                    
+                    
+
+
+    <div id="AlernativeBreadCrumb">
+        <div id="BreadCrumbWide">
+
+<div id="BreadCrumb">
+        <span class="BreadCrumbLabel">
+            You are here:
+        </span>
+        <span id="BreadCrumbPath">
+                <a href="/projectweb/top/" class="">
+                    TOP
+                </a>
+                    <span>/</span>
+                <a href="/projectweb/top/vrptw/" class="">
+                    VRPTW
+                </a>
+                    <span>/</span>
+                <a href="/projectweb/top/vrptw/100-customers/" class="Selected">
+                    100 customers
+                </a>
+        </span>
+</div>
+
+        </div>
+    </div>
+
+
+                    <table id="FullRegion" border="0" cellspacing="0" cellpadding="0" width="100%">
+                        <tr class="MainRow">
+                            
+<td id="LeftRegion" rowspan="2">
+    <div id="LeftRegionDiv">
+        <div id="LeftMenuDiv">
+            <div class="linkMenu">
+                <ul>
+                        <li>
+                            
+
+
+
+<a href="/projectweb/top/nearp/" class="">
+    NEARP / MCGRP
+</a>
+
+                        </li>
+                        <li>
+                            
+
+
+
+<a href="/projectweb/top/pdptw/" class="">
+    PDPTW
+</a>
+
+                        </li>
+                        <li>
+                            
+
+
+
+<a href="/projectweb/top/vrptw/" class="expanded">
+    VRPTW
+</a>
+
+                                <ul>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/documentation2/" class="">
+    Documentation
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/solomon-benchmark/" class="">
+    Solomon benchmark
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/25-customers/" class="">
+    25 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/50-customers/" class="">
+    50 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/100-customers/" class="selected">
+    100 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/homberger-benchmark/" class="">
+    Gehring &amp; Homberger benchmark
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/200-customers/" class="">
+    200 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/400-customers/" class="">
+    400 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/600-customers/" class="">
+    600 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/800-customers/" class="">
+    800 customers
+</a>
+                                        </li>
+                                        <li>
+                                            
+
+
+
+<a href="/projectweb/top/vrptw/1000-customers/" class="">
+    1000 customers
+</a>
+                                        </li>
+                                </ul>
+                        </li>
+                        <li>
+                            
+
+
+
+<a href="/projectweb/top/contact-information/" class="">
+    Contact information
+</a>
+
+                        </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</td>
+
+<script type="text/javascript">
+    jQuery(document).ready(function ($) {
+        $("a.selected.expanded").click(function (event) {
+            event.preventDefault();
+            $(this).removeClass('expanded').addClass('expandable');
+            $(this).siblings('ul').hide();
+            $(this).unbind('click');
+        });
+    });
+</script>
+
+                            <td id="MainArea">
+                                <div id="MainAreaDiv">
+                                    <a id="content"></a>
+                                    <div id="voicearea" class="TextContent">
+    
+
+
+<div class="Ingress">
+    <div class="Ingress">
+        <div class="Title">
+            100 customers
+        </div>
+        <div class="Body">
+                <div class="Ingress">
+                    Here you find instance definitions and best known solutions for the 100 customer instances of Solomon&#39;s VRPTW benchmark problems from 1987. The version reported here has a hierarchical objective: 1) Minimize number of vehicles 2) Minimize total distance. Distance and time should be calculated with double precision, total distance results are rounded to two decimals. Exact methods typically use a monolithic total distance objective and use integral or low precision distance and time calculations. Hence, results are not directly comparable.
+By clicking on an instance name in blue, you will open a file with a specification&#160;of the detailed solution.
+                </div>
+        </div>
+    </div>
+
+</div>
+    
+<div class="rich-text-field">
+<h2>Instance definitions (text)</h2>
+<p>See Solomon's web page <a href="http://web.cba.neu.edu/~msolomon/problems.htm" target="_blank">http://web.cba.neu.edu/~msolomon/problems.htm</a>&nbsp;.</p>
+<p>As a backup, you will find a zip-file with the 100 instance definitions <a href="/globalassets/project/top/vrptw/solomon/solomon-100.zip" target="_blank">here</a>.</p>
+<h2>Best known solution values<br /><br /></h2>
+<p>See Solomon's web page <a href="http://web.cba.neu.edu/~msolomon/problems.htm" target="_blank">http://web.cba.neu.edu/~msolomon/problems.htm</a>&nbsp;.&nbsp;&nbsp;<br /><br /></p>
+<p>A&nbsp;few new results have been added in the updated table&nbsp;below.<br />&nbsp;</p>
+<table style="width: 500px; text-align: left; margin-right: auto; margin-left: auto;" border="1">
+<tbody>
+<tr>
+<td align="center" valign="top" style="text-align: left; color: #ffffff; font-weight: bold; vertical-align: top; background-color: #000066;">Instance</td>
+<td align="center" valign="top" style="text-align: left; color: #ffffff; font-weight: bold; vertical-align: top; background-color: #000066;">Vehicles</td>
+<td align="center" valign="top" style="text-align: left; color: #ffffff; font-weight: bold; vertical-align: top; background-color: #000066;">Distance</td>
+<td align="center" valign="top" style="text-align: left; color: #ffffff; font-weight: bold; vertical-align: top; background-color: #000066;">Reference</td>
+<td align="center" valign="top" style="text-align: left; color: #ffffff; font-weight: bold; vertical-align: top; background-color: #000066;">
+<p>Comment</p>
+</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c101.txt" target="_blank">c101</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td align="right" style="text-align: center; vertical-align: top;">828.94</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution&nbsp;by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c102.txt" target="_blank">c102</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td align="right" style="text-align: center; vertical-align: top;">828.94</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c103.txt" target="_blank">c103</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td align="right" style="text-align: center; vertical-align: top;">828.06</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c104.txt" target="_blank">c104</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td align="right" style="text-align: center; vertical-align: top;">824.78</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c105.txt" target="_blank">c105</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">828.94</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c106.txt" target="_blank">c106</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">828.94</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c107.txt" target="_blank">c107</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">828.94</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c108.txt" target="_blank">c108</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">828.94</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c109.txt" target="_blank">c109</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">828.94</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td colspan="5" style="background-color: #000066; height: 1px; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c201.txt" target="_blank">c201</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">591.56</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c202.txt" target="_blank">c202</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">591.56</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c203.txt" target="_blank">c203</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">591.17</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c204.txt" target="_blank">c204</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">590.60</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c205.txt" target="_blank">c205</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">588.88</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c206.txt" target="_blank">c206</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">588.49</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c207.txt" target="_blank">c207</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">588.29</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/c208.txt" target="_blank">c208</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">588.32</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td colspan="5" style="background-color: #000066; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r101.txt" target="_blank">r101</a></td>
+<td style="text-align: center; vertical-align: top;">19</td>
+<td style="text-align: center; vertical-align: top;">1650.80</td>
+<td style="text-align: center; vertical-align: top;">H</td>
+<td style="text-align: center; vertical-align: top;">See note below</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r102.txt" target="_blank">r102</a></td>
+<td style="text-align: center; vertical-align: top;">17</td>
+<td style="text-align: center; vertical-align: top;">1486.12</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r103_13_1292.675455.txt" target="_blank">r103</a></td>
+<td style="text-align: center; vertical-align: top;">13</td>
+<td style="text-align: center; vertical-align: top;">1292.68</td>
+<td style="text-align: center; vertical-align: top;">LLH</td>
+<td style="text-align: center; vertical-align: top;">&nbsp;Detailed solution by Shobb</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r104.txt" target="_blank">r104</a></td>
+<td style="text-align: center; vertical-align: top;">9</td>
+<td style="text-align: center; vertical-align: top;">1007.31</td>
+<td style="text-align: center; vertical-align: top;">MBD</td>
+<td style="text-align: center; vertical-align: top;">See note below</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r105.txt" target="_blank">r105</a></td>
+<td style="text-align: center; vertical-align: top;">14</td>
+<td style="text-align: center; vertical-align: top;">1377.11</td>
+<td style="text-align: center; vertical-align: top;">RT</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r106.txt" target="_blank">r106</a></td>
+<td style="text-align: center; vertical-align: top;">12</td>
+<td style="text-align: center; vertical-align: top;">1252.03</td>
+<td style="text-align: center; vertical-align: top;">MBD</td>
+<td style="text-align: center; vertical-align: top;">See note below</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r107_10_1104.655926.txt" target="_blank">r107</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">1104.66</td>
+<td style="text-align: center; vertical-align: top;">S97</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by Shobb &nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r108.txt" target="_blank">r108</a></td>
+<td style="text-align: center; vertical-align: top;">9</td>
+<td style="text-align: center; vertical-align: top;">960.88</td>
+<td style="text-align: center; vertical-align: top;">BBB</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution from BVH</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r109_11_1194.734093.txt" target="_blank">r109</a></td>
+<td style="text-align: center; vertical-align: top;">11</td>
+<td style="text-align: center; vertical-align: top;">1194.73</td>
+<td style="text-align: center; vertical-align: top;">HG</td>
+<td style="text-align: center; vertical-align: top;">&nbsp;Detailed solution by Shobb</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r110.txt" target="_blank">r110</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">1118.84</td>
+<td style="text-align: center; vertical-align: top;">MBD</td>
+<td style="text-align: center; vertical-align: top;">See note below</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r111_10_1096.726525.txt" target="_blank">r111</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">1096.72</td>
+<td style="text-align: center; vertical-align: top;">RGP</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by Shobb&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;">r112</td>
+<td style="text-align: center; vertical-align: top;">9</td>
+<td style="text-align: center; vertical-align: top;">982.14</td>
+<td style="text-align: center; vertical-align: top;">GTA</td>
+<td style="text-align: center; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td colspan="5" style="background-color: #000066; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r201.txt" target="_blank">r201</a></td>
+<td style="text-align: center; vertical-align: top;">4</td>
+<td style="text-align: center; vertical-align: top;">1252.37</td>
+<td style="text-align: center; vertical-align: top;">HG</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r202_3_1191.7029648.txt" target="_blank">r202</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">1191.70</td>
+<td style="text-align: center; vertical-align: top;">RGP</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by Shobb&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;">r203</td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">
+<p>939.50</p>
+</td>
+<td style="text-align: center; vertical-align: top;">WL</td>
+<td style="text-align: center; vertical-align: top;">2009-10-21</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r204.txt" target="_blank">r204</a></td>
+<td style="text-align: center; vertical-align: top;">2</td>
+<td style="text-align: center; vertical-align: top;">825.52</td>
+<td style="text-align: center; vertical-align: top;">BVH</td>
+<td style="text-align: center; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r205.txt" target="_blank">r205b</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">994.43</td>
+<td style="text-align: center; vertical-align: top;">RGP</td>
+<td style="text-align: center; vertical-align: top;">994.42 reported by RGP is believed to&nbsp;result from a rounding error&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r206.txt" target="_blank">r206</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">906.14</td>
+<td style="text-align: center; vertical-align: top;">SSSD</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by SAM::OPT</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;">r207</td>
+<td style="text-align: center; vertical-align: top;">2</td>
+<td style="text-align: center; vertical-align: top;">890.61</td>
+<td style="text-align: center; vertical-align: top;">RP</td>
+<td style="text-align: center; vertical-align: top;">2005-02-25</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r208.txt" target="_blank">r208</a></td>
+<td style="text-align: center; vertical-align: top;">2</td>
+<td style="text-align: center; vertical-align: top;">726.82</td>
+<td style="text-align: center; vertical-align: top;">MBD</td>
+<td style="text-align: center; vertical-align: top;">See note below</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r209.txt" target="_blank">r209</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">909.16</td>
+<td style="text-align: center; vertical-align: top;">H</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution from BVH</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/r210.txt" target="_blank">r210</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">939.37</td>
+<td style="text-align: center; vertical-align: top;">MBD</td>
+<td style="text-align: center; vertical-align: top;">See note below</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;">r211</td>
+<td style="text-align: center; vertical-align: top;">2</td>
+<td style="text-align: center; vertical-align: top;">
+<p>885.71</p>
+</td>
+<td style="text-align: center; vertical-align: top;">WL</td>
+<td style="text-align: center; vertical-align: top;">2009-10-21</td>
+</tr>
+<tr>
+<td colspan="5" style="background-color: #000066; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc101.txt" target="_blank">rc101b</a></td>
+<td style="text-align: center; vertical-align: top;">14</td>
+<td style="text-align: center; vertical-align: top;">1696.95</td>
+<td style="text-align: center; vertical-align: top;">TBGGP</td>
+<td style="text-align: center; vertical-align: top;">1696.94 reported by TBGGP is believed to result from a rounding error&nbsp;&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc102_12_1554.747199.txt" target="_blank">rc102</a></td>
+<td style="text-align: center; vertical-align: top;">12</td>
+<td style="text-align: center; vertical-align: top;">1554.75</td>
+<td style="text-align: center; vertical-align: top;">TBGGP</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by Shobb&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc103_11_1261.671806.txt" target="_blank">rc103</a></td>
+<td style="text-align: center; vertical-align: top;">11</td>
+<td style="text-align: center; vertical-align: top;">1261.67</td>
+<td style="text-align: center; vertical-align: top;">S98</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by Shobb&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc104_10_1135.479358.txt" target="_blank">rc104</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">1135.48</td>
+<td style="text-align: center; vertical-align: top;">CLM</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by Shobb&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc105.txt" target="_blank">rc105</a></td>
+<td style="text-align: center; vertical-align: top;">13</td>
+<td style="text-align: center; vertical-align: top;">1629.44</td>
+<td style="text-align: center; vertical-align: top;">BBB</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution from BVH</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc106.txt" target="_blank">rc106</a></td>
+<td style="text-align: center; vertical-align: top;">11</td>
+<td style="text-align: center; vertical-align: top;">1424.73</td>
+<td style="text-align: center; vertical-align: top;">BBB</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution from BVH</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;">rc107</td>
+<td style="text-align: center; vertical-align: top;">11</td>
+<td style="text-align: center; vertical-align: top;">1230.48</td>
+<td style="text-align: center; vertical-align: top;">S97</td>
+<td style="text-align: center; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc108_10_1139.821392.txt" target="_blank">rc108</a></td>
+<td style="text-align: center; vertical-align: top;">10</td>
+<td style="text-align: center; vertical-align: top;">1139.82</td>
+<td style="text-align: center; vertical-align: top;">TBGGP</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution by Shobb&nbsp;</td>
+</tr>
+<tr>
+<td colspan="5" style="background-color: #000066; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc201.txt" target="_blank">rc201</a></td>
+<td style="text-align: center; vertical-align: top;">4</td>
+<td style="text-align: center; vertical-align: top;">1406.94</td>
+<td style="text-align: center; vertical-align: top;">MBD</td>
+<td style="text-align: center; vertical-align: top;">See note below</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;">rc202</td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">1365.65</td>
+<td style="text-align: center; vertical-align: top;">GCC</td>
+<td style="text-align: center; vertical-align: top;">2004-03-22</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;">rc203</td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">1049.62</td>
+<td style="text-align: center; vertical-align: top;">CC</td>
+<td style="text-align: center; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc204.txt" target="_blank">rc204</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">798.46</td>
+<td style="text-align: center; vertical-align: top;">MBD</td>
+<td style="text-align: center; vertical-align: top;">See note below</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc205.txt" target="_blank">rc205</a></td>
+<td style="text-align: center; vertical-align: top;">4</td>
+<td style="text-align: center; vertical-align: top;">1297.65</td>
+<td style="text-align: center; vertical-align: top;">MBD</td>
+<td style="text-align: center; vertical-align: top;">See note below</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc206.txt" target="_blank">rc206</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">1146.32</td>
+<td style="text-align: center; vertical-align: top;">H</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution from BVH</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc207.txt" target="_blank">rc207</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">1061.14</td>
+<td style="text-align: center; vertical-align: top;">BVH</td>
+<td style="text-align: center; vertical-align: top;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center; vertical-align: top;"><a href="/contentassets/adf48e65e3a84dd6871eb7586707675d/rc208.txt" target="_blank">rc208</a></td>
+<td style="text-align: center; vertical-align: top;">3</td>
+<td style="text-align: center; vertical-align: top;">828.14</td>
+<td style="text-align: center; vertical-align: top;">IKMUY</td>
+<td style="text-align: center; vertical-align: top;">Detailed solution from BVH</td>
+</tr>
+<tr><th style="text-align: center; background-color: #000066; color: #ffffff; vertical-align: top;">&nbsp;</th><th style="text-align: center; background-color: #000066; color: #ffffff; vertical-align: top;">&nbsp;</th><th style="text-align: center; background-color: #000066; color: #ffffff; vertical-align: top;">&nbsp;</th><th colspan="2" style="text-align: center; background-color: #000066; vertical-align: top;">&nbsp;</th></tr>
+</tbody>
+</table>
+<h3>&nbsp;b: Detailed solution by Bauke Conijn, TU Eindhoven</h3>
+<hr style="width: 100%; height: 2px;" />
+<h2>NB!</h2>
+<p>Earlier, slightly better total distance&nbsp;values were reported for instances R101, R104, R106, R110, R208, R210, RC201, RC204, and&nbsp;RC205.&nbsp;These values were produced using&nbsp;lower precision arithmetic.&nbsp;We are grateful to Bauke Conijn of TU Eindhoven for pointing this out, and for providing us with correct values and detailed solutions for these instances. All detailed solutions have been checked by our solution checker. Some of the detailed solutions were taken from the <a href="http://sun.aei.polsl.pl/~zjc/" target="_blank">website of Z. J. Czech</a>. We also thank David Mester for giving us&nbsp;details on how the early results were produced, and for providing us with&nbsp;revised values and detailed solutions that&nbsp;were produced&nbsp;using double precision arithmetic. The&nbsp;solutions and values from the two sources coincide.&nbsp;We know that several other authors have produced&nbsp;solutions with the same values.&nbsp;</p>
+<h2>References</h2>
+<p><br />BBB - J. Berger, M. Barkaoui and O. Bräysy, "A Parallel Hybrid Genetic Algorithm for the Vehicle Routing Problem with Time Windows," Working paper, Defense Research Establishment Valcartier, Canada, 2001.<br /><br />BVH - R. Bent and P. Van Hentenryck, "A Two-Stage Hybrid Local Search for the Vehicle Routing Problem with Time Windows," Technical Report CS-01-06, Department of Computer Science, Brown University, 2001.<br /><br />CC - Z. J. Czech and P. Czarnas, "A Parallel Simulated Annealing for the Vehicle Routing Problem with Time Windows," Proc. 10th Euromicro Workshop on Parallel, Distributed and Network-based Processing, Canary Islands, Spain, (January 9--11, 2002), 376--383.<br /><br />CLM - J.-F. Cordeau,&nbsp; G. Laporte, and A. Mercier, "A Unified Tabu Search Heuristic for Vehicle Routing Problems with Time Windows," Working Paper CRT-00-03, Centre for Research on Transportation, Montreal, Canada, 2000.<br /><br />GCC - Agnieszka Debudaj-Grabysz, Zbigniew J.Czech and Piotr Czarnas<br />Silesia University of Technology and University of Wroclaw, Poland (2004)<br /><br />GTA - L. M. Gambardella, E. Taillard, and G. Agazzi, "MACS-VRPTW: A Multiple Ant Colony System for Vehicle Routing Problems with Time Windows," in New Ideas in Optimization, D. Corne, M. Dorigo and F. Glover (eds), 63-76, McGraw-Hill, London, 1999.<br /><br />H - J. Homberger, "Verteilt-parallele Metaheuristiken zur Tourenplanung," Gaber, Wiesbaden (2000).<br /><br />HG - J. Homberger and H. Gehring, "Two Evolutionary Metaheuristics for the Vehicle Routing Problem with Time Windows," INFOR, VOL. 37, 297-318, (1999).<br /><br />IKMUY - T. Ibaraki, M. Kubo, T. Masuda, T. Uno and M. Yagiura, "Effective Local Search Algorithms for the Vehicle Routing Problem with General Time Windows," Working Paper, Department of Applied Mathematics and Physics, Kyoto University, Japan, 2001.<br /><br />MBD - D. Mester, O. Bräysy and W. Dullaert. A Multi-parametric Evolution Strategies Algorithm for Vehicle Routing Problems. Working Paper, Institute of Evolution, University of Haifa,&nbsp;Israel&nbsp;(2005).</p>
+<p>LLH - H. Li, A. Lim, and J. Huang, "Local Search with Annealing-like Restarts to Solve the VRPTW," Working Paper, Department of Computer Science, National University of Singapore, 2001.<br /><br />RGP - L.M. Rousseau, M. Gendreau and G. Pesant, "Using Constraint-Based Operators to Solve the Vehicle Routing Problem with Time Windows," Journal of Heuristics, 8: 43–58, 2002.<br /><br />RP - S. Ropke &amp; D.Pisinger. "A general heuristic for vehicle routing problems",&nbsp; technical report, Department of Computer Science, University of Copenhagen.<br /><br />RT - Y. Rochat and E.D. Taillard, "Probabilistic Diversification and Intensification in Local Search for Vehicle Routing," Journal of Heuristics 1, 147-167, (1995).</p>
+<p>SAM::OPT - Hasle G., O. Kloster: Industrial Vehicle Routing Problems. Chapter in Hasle G., K-A Lie, E. Quak (eds): Geometric Modelling, Numerical Simulation, and Optimization. ISBN 978-3-540-68782-5, Springer 2007.<br /><br />SSSD - G. Schrimpf, J. Schneider, H. Stamm-Wilbrandt and G. Dueck, "Record Breaking Optimization Results Using the Ruin and Recreate Principle," Journal of Computational Physics 159, 139-171, (2000).<br /><br />S97 - P. Shaw, "A New Local Search Algorithm Providing High Quality Solutions to Vehicle Routing Problems," Working Paper, University of Strathclyde, Glasgow, Scotland, 1997.<br /><br />S98 - P. Shaw, "Using Constraint Programming and Local Search Methods to Solve Vehicle Routing Problems," In Principles and Practice of Constraint Programming - CP98, Lecture Notes in Computer Science, 417-431, M. Maher and J.-F. Puget (eds), Springer-Verlag, New York, 1998.<br /><br />TBGGP - E. Taillard, P. Badeau, M. Gendreau, F. Geurtin, and J.Y. Potvin, "A Tabu Search Heuristic for the Vehicle Routing Problem with Time Windows," Transportation Science, 31, 170-186, (1997).</p>
+<p>WL - Woch M., Łebkowski P.: Sequential Simulated Annealing for the Vehicle Routing Problem with Time Windows. Decision Making in Manufacturing and Services, vol. 3, no. 1-2., s. 87-100, 2009.</p>
+</div>
+</div>
+
+
+
+
+
+<p class="metatext">
+    <span>Published </span>
+    <span>April 18, 2008</span>
+</p>
+                                </div>
+                            </td>
+
+
+
+
+<td id="RightRegion" rowspan="2">
+    <div id="RightRegionDiv">
+        
+
+
+        
+
+
+        
+
+
+        
+
+    </div>
+</td>                        </tr>
+                        <tr>
+                            <td id="FooterArea"></td>
+                        </tr>
+                    </table>
+
+                    <div id="FooterDiv">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="text/javascript" src="https://dl.episerver.net/13.6.1/epi-util/find.js"></script>
+<script type="text/javascript">
+if(typeof FindApi === 'function'){var api = new FindApi();api.setApplicationUrl('/');api.setServiceApiBaseUrl('/find_v2/');api.processEventFromCurrentUri();api.bindWindowEvents();api.bindAClickEvent();api.sendBufferedEvents();}
+</script>
+
+</body>
+</html>
