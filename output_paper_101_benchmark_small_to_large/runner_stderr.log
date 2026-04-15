@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "D:\Hoc\DACTDLGT\scripts\run_comparison.py", line 469, in <module>
+    main()
+  File "D:\Hoc\DACTDLGT\scripts\run_comparison.py", line 335, in main
+    print("Không còn instance m\u1edbi \u0111\u1ec3 ch\u1ea1y (resume hoàn t\u1ea5t).")
+  File "C:\Users\tuna\AppData\Local\Programs\Python\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u1edb' in position 20: character maps to <undefined>

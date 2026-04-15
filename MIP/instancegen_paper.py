@@ -128,6 +128,16 @@ def _seed(layout: str, spec_idx: int, suite_offset: int, relaxed: bool) -> int:
     return base + suite_offset + level_offset + 100 * spec_idx
 
 
+def _seed_override(layout: str, spec: Spec, relaxed: bool) -> int | None:
+    overrides = {
+        # Local override: keep paper-style constraints but use a lighter
+        # compatibility sample for C-n21-k6 so the benchmark starts faster.
+        ("C", 21, 6, False): 1313,
+        ("C", 21, 6, True): 10978,
+    }
+    return overrides.get((layout, spec.n_nodes, spec.m_vehicles, relaxed))
+
+
 def _suite_specs(kind: str) -> list[Spec]:
     if kind == "up_to_101":
         return [
@@ -232,7 +242,9 @@ def _generate_suite(
                 if not src_path.is_file():
                     raise FileNotFoundError(f"Missing source file: {src_path}")
 
-                sd = _seed(layout, spec_idx=spec_idx, suite_offset=suite_offset, relaxed=relaxed)
+                sd = _seed_override(layout, spec, relaxed)
+                if sd is None:
+                    sd = _seed(layout, spec_idx=spec_idx, suite_offset=suite_offset, relaxed=relaxed)
                 inst = _build_one(
                     layout=layout,
                     spec=spec,

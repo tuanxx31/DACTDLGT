@@ -57,6 +57,20 @@ Canonical category files used:
 The paper specifies random compatibility generation (`p=0.3/0.7`) but does not publish original random seeds and exact sampled-node procedure in full detail.  
 Therefore, this dataset is **paper-style reproducible** (same generation rules and source family), with deterministic fixed seeds documented in manifests; it is not a guaranteed bit-for-bit copy of the authors' hidden raw instances.
 
+## Local seed override
+
+For local benchmarking convenience, `c-n21-k6` uses a lighter compatibility sample than the original default deterministic seed:
+
+- tight: seed `1313`
+- relaxed: seed `10978`
+
+The instance still follows the same paper-style rules:
+
+- Solomon `C` coordinates
+- `p = 0.3 / 0.7`
+- depot compatibility fixed to `1`
+- every customer compatible with at least one vehicle
+
 ## Regenerate
 
 From repo root:
