@@ -18,6 +18,8 @@ import time
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent
+# Khi không truyền --instance / --instance-dir: chỉ bộ ràng buộc chặt (tight), ≈ …/MIP/data_paper_101/tight.
+_DEFAULT_INSTANCE_DIR = _ROOT / "MIP" / "data_paper_101" / "tight"
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
@@ -125,7 +127,7 @@ def main() -> None:
     )
     ap.add_argument(
         "--instance-dir", type=Path, action="append",
-        help="Thư mục chứa các JSON instance (ví dụ: MIP/data, MIP/data2)",
+        help="Thư mục chứa các JSON instance; mặc định nếu không chỉ định file/thư mục: MIP/data_paper_101/tight",
     )
     ap.add_argument("--beta", type=float, default=5.0)
     ap.add_argument("--no-local-search", action="store_true")
@@ -153,13 +155,15 @@ def main() -> None:
             paths.extend(_collect_json_files_recursive(dd))
 
     if not paths:
-        inst_dir = _ROOT / "vrpcc" / "data" / "instances"
-        paths = _collect_json_files_recursive(inst_dir)
+        paths = _collect_json_files_recursive(_DEFAULT_INSTANCE_DIR)
     else:
         paths = sorted({p.resolve() for p in paths})
 
     if not paths:
-        print("Không có instance. Chạy: python -m vrpcc.data.generate_instances")
+        print(
+            f"Không có instance JSON trong {_DEFAULT_INSTANCE_DIR}. "
+            "Thêm --instance / --instance-dir hoặc kiểm tra thư mục dữ liệu."
+        )
         sys.exit(1)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
