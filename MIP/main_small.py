@@ -1,9 +1,3 @@
-"""
-Chạy MIP trên ví dụ nhỏ (data_small):
-  Kho 0, khách {1,2,3,4}, xe (0,1)
-  V0 = {1,2,3}, V1 = {2,3,4}
-  Ma trận c được khai báo thủ công trong example-n5-k2.json
-"""
 from __future__ import annotations
 
 import os

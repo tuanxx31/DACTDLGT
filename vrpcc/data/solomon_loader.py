@@ -1,4 +1,3 @@
-"""Load coordinates from Solomon-style VRP text files (NODE_COORD_SECTION)."""
 
 from __future__ import annotations
 
@@ -32,15 +31,12 @@ def _parse_coord_lines(lines: list[str]) -> tuple[list[int], np.ndarray]:
 
 
 def load_solomon_coords(path: str | Path) -> np.ndarray:
-    """
-    Returns coords array shape (N, 2) in file order (row 0 = depot in standard files).
-    """
     text = Path(path).read_text(encoding="utf-8", errors="replace")
     upper = text.upper()
     if "NODE_COORD_SECTION" in upper:
         idx = upper.index("NODE_COORD_SECTION")
         rest = text[idx:].split("\n", 1)[1]
-        # stop at next SECTION
+
         block_lines: list[str] = []
         for line in rest.splitlines():
             lu = line.strip().upper()
@@ -49,14 +45,13 @@ def load_solomon_coords(path: str | Path) -> np.ndarray:
             block_lines.append(line)
         _, xy = _parse_coord_lines(block_lines)
         return xy
-    # Fallback: lines of "id x y"
+
     lines = [ln for ln in text.splitlines() if ln.strip()]
     _, xy = _parse_coord_lines(lines)
     return xy
 
 
 def euclidean_dist_matrix(coords: np.ndarray) -> np.ndarray:
-    """Full symmetric matrix; c_ij = Euclidean distance (float)."""
     diff = coords[:, None, :] - coords[None, :, :]
     d = np.sqrt((diff**2).sum(axis=2))
     return d.astype(np.float64)
@@ -68,10 +63,6 @@ def sample_instance_coords(
     seed: int,
     start_index: int = 0,
 ) -> np.ndarray:
-    """
-    Take depot + n_customers points from Solomon file in order (or shuffle with seed).
-    If solomon_path is None, raises - caller should use synthetic generator.
-    """
     xy = load_solomon_coords(solomon_path)
     need = n_customers + 1
     if xy.shape[0] < need + start_index:

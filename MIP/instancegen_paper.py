@@ -1,23 +1,3 @@
-"""
-Generate paper-style VRPCC instances from Solomon benchmark text files.
-
-Reference (Section 4, computational setup):
-  "An Approximation Algorithm for Vehicle Routing with Compatibility Constraints"
-  Yu, Nagarajan, Shen (2018)
-
-Paper-aligned rules used here:
-  - Use node locations from Solomon benchmark files (R / C / RC).
-  - Build Euclidean distance matrix, symmetric, with minimum distance at least 1.
-  - Generate compatibility u[k][j] by Bernoulli(p):
-      * p = 0.3 for tight set
-      * p = 0.7 for relaxed set
-  - Keep depot compatibility u[k][0] = 1 for all vehicles.
-  - Ensure feasibility: each customer j >= 1 has at least one compatible vehicle.
-
-This script creates two suites:
-  1) up-to-101 suite (instances in Tables 3/4 of Optimization-Online preprint)
-  2) up-to-26 suite (instances in Tables 1/2 of Optimization-Online preprint)
-"""
 
 from __future__ import annotations
 
@@ -35,10 +15,10 @@ from typing import Iterable
 @dataclass
 class Instance:
     name: str
-    n: int  # number of nodes including depot
-    m: int  # number of vehicles
+    n: int
+    m: int
     prob_compat: float
-    layout: str  # C | R | RC
+    layout: str
     coords: list[list[float]]
     c: list[list[float]]
     u: list[list[float]]
@@ -130,8 +110,8 @@ def _seed(layout: str, spec_idx: int, suite_offset: int, relaxed: bool) -> int:
 
 def _seed_override(layout: str, spec: Spec, relaxed: bool) -> int | None:
     overrides = {
-        # Local override: keep paper-style constraints but use a lighter
-        # compatibility sample for C-n21-k6 so the benchmark starts faster.
+
+
         ("C", 21, 6, False): 1313,
         ("C", 21, 6, True): 10978,
     }
@@ -158,11 +138,11 @@ def _suite_specs(kind: str) -> list[Spec]:
 
 
 def _source_subset_for_n(n_nodes: int) -> str:
-    # User-requested mapping:
-    # n21 from 25-customer set
-    # n41 from 50-customer set
-    # n61, n81, n101 from 100-customer set
-    # (Small suite n11/n16/n26 naturally also comes from 25-customer set.)
+
+
+
+
+
     if n_nodes <= 26:
         return "25"
     if n_nodes == 41:
@@ -173,7 +153,7 @@ def _source_subset_for_n(n_nodes: int) -> str:
 
 
 def _source_file_for_layout(layout: str) -> str:
-    # Canonical representative in each Solomon category.
+
     return {
         "C": "c101.txt",
         "R": "r101.txt",
@@ -301,7 +281,7 @@ def _check_instance_files(files: Iterable[Path]) -> None:
         if len(u) != m or any(len(row) != n for row in u):
             raise ValueError(f"Bad compatibility shape: {p}")
 
-        # Symmetry + non-negative check.
+
         for i in range(n):
             if abs(float(c[i][i])) > 1e-9:
                 raise ValueError(f"Distance diagonal must be zero: {p}")
@@ -311,12 +291,12 @@ def _check_instance_files(files: Iterable[Path]) -> None:
                 if float(c[i][j]) < 1.0:
                     raise ValueError(f"Distance must be >= 1 for i!=j: {p}")
 
-        # Depot compatibility
+
         for k in range(m):
             if float(u[k][0]) != 1.0:
                 raise ValueError(f"Depot compatibility must be 1: {p}")
 
-        # Feasibility: each customer has at least one compatible vehicle.
+
         for j in range(1, n):
             if not any(float(u[k][j]) >= 0.5 for k in range(m)):
                 raise ValueError(f"Infeasible customer compatibility at node {j}: {p}")
@@ -363,7 +343,7 @@ def main() -> None:
     if not args.skip_101:
         targets.append((args.out_root_101, "up_to_101", _suite_specs("up_to_101"), 0))
     if not args.skip_26:
-        # Offset seeds so n21 in this suite is independent from n21 in up_to_101 suite.
+
         targets.append((args.out_root_26, "up_to_26", _suite_specs("up_to_26"), 50000))
 
     if not targets:
@@ -372,7 +352,7 @@ def main() -> None:
 
     for out_root, suite_name, specs, seed_offset in targets:
         if args.clean and out_root.exists():
-            # Manual recursive delete to avoid shelling out.
+
             for p in sorted(out_root.rglob("*"), key=lambda x: len(x.parts), reverse=True):
                 if p.is_file():
                     p.unlink()

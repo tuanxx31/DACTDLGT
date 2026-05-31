@@ -1,16 +1,4 @@
-#!/usr/bin/env python3
-"""
-One-click runner for paper-style VRPCC benchmark (small -> large) with live progress.
 
-Default behavior:
-- Dataset: MIP/data_paper_101
-- Order:
-    tight:   c/r/RC x (n21, n41, n61, n81, n101)
-    relaxed: c/r/RC x (n21, n41, n61, n81, n101)
-- MIP limits: 600s and 7200s
-- Incremental save after each instance is handled by scripts/run_comparison.py
-- Resume mode enabled by default (safe for long runs)
-"""
 
 from __future__ import annotations
 
@@ -32,8 +20,8 @@ def _ordered_instance_paths(data_root: Path) -> list[Path]:
     paths: list[Path] = []
     missing: list[Path] = []
     for level in levels:
-        # Run all tight instances from small to large first, then relaxed.
-        # Within each size bucket, run C/R/RC in that order.
+
+
         for sz in sizes:
             for layout in layouts:
                 name = f"{layout}-n{sz}"
@@ -75,10 +63,6 @@ def _timestamp() -> str:
 
 
 def _default_python(repo_root: Path) -> Path:
-    """
-    Prefer repository venv interpreter so user can run this script without extra args.
-    Fallback to current interpreter if venv is absent.
-    """
     venv_py = repo_root / ".venv" / "Scripts" / "python.exe"
     if venv_py.is_file():
         return venv_py
@@ -249,7 +233,7 @@ def main() -> None:
     if not py_exe.is_file():
         raise FileNotFoundError(f"Python executable not found: {py_exe}")
 
-    # Early check: child interpreter must have gurobipy for MIP benchmark.
+
     chk = subprocess.run(
         [str(py_exe), "-c", "import importlib.util as u; print(bool(u.find_spec('gurobipy')))"],
         capture_output=True,
@@ -274,8 +258,8 @@ def main() -> None:
     stdout_log = out_dir / "runner_stdout.log"
     stderr_log = out_dir / "runner_stderr.log"
 
-    # Guard against reusing corrupted outputs from a wrong Python environment
-    # (for example when previous runs had `No module named 'gurobipy'`).
+
+
     existing_rows = _load_rows(summary_path)
     if existing_rows and _has_python_env_mip_error(existing_rows):
         backup = out_dir.with_name(
@@ -318,8 +302,8 @@ def main() -> None:
     print(f"  stderr log: {stderr_log}")
     print("")
 
-    # Create the two paper-style tables immediately, even before the first
-    # instance finishes, so partial progress is always visible on disk.
+
+
     t1, t2 = _export_paper_tables(out_dir)
     print(f"[{_timestamp()}] initialized table1 -> {t1}")
     print(f"[{_timestamp()}] initialized table2 -> {t2}")
@@ -339,7 +323,7 @@ def main() -> None:
             rc = proc.poll()
             done, last = _read_summary(summary_path)
 
-            # Print when progress changes or periodic heartbeat.
+
             if done != prev_done:
                 prev_done = done
                 t1, t2 = _export_paper_tables(out_dir)

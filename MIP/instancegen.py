@@ -1,9 +1,3 @@
-"""
-Generate raw VRPCC instances following Yu, Nagarajan, Shen (2018), Section 4:
-- Coordinates: Solomon-style C (clustered), R (random), RC (mixed).
-- Compatibility: Bernoulli(p) per (vehicle, customer); p=0.3 tight, p=0.7 relaxed.
-- Repairs: each customer has >=1 vehicle; each vehicle can serve >=1 customer.
-"""
 from __future__ import annotations
 
 import argparse
@@ -18,13 +12,13 @@ from typing import List, Tuple
 @dataclass
 class Instance:
     name: str
-    n: int  # nodes including depot 0
-    m: int  # vehicles
+    n: int
+    m: int
     prob_compat: float
-    layout: str  # "C" | "R" | "RC"
+    layout: str
     coords: List[List[float]]
-    c: List[List[float]]  # distance matrix (symmetric, >= 1)
-    u: List[List[float]]  # u[k][j] in {0.0, 1.0}; depot j=0 luon 1.0 (khong lam tron)
+    c: List[List[float]]
+    u: List[List[float]]
 
 
 def _euclidean(a: Tuple[float, float], b: Tuple[float, float]) -> float:
@@ -37,7 +31,7 @@ def _dist_matrix(coords: List[Tuple[float, float]]) -> List[List[float]]:
     for i in range(n):
         for j in range(i + 1, n):
             d = _euclidean(coords[i], coords[j])
-            # Paper: minimum distance at least 1; khong lam tron
+
             dij = max(1.0, d)
             c[i][j] = c[j][i] = dij
     return c
@@ -46,8 +40,7 @@ def _dist_matrix(coords: List[Tuple[float, float]]) -> List[List[float]]:
 def _solomon_coords(
     rng: random.Random, n: int, layout: str
 ) -> List[Tuple[float, float]]:
-    """n nodes: index 0 = depot, 1..n-1 customers. Layout C / R / RC."""
-    # Scale similar to Solomon-style benchmarks (compact [0, 100] plane)
+
     W = 100.0
 
     def uniform() -> Tuple[float, float]:
@@ -95,7 +88,6 @@ def _solomon_coords(
 
 
 def _repair_compatibility(u: List[List[float]], m: int, n: int, rng: random.Random) -> None:
-    """Ensure feasibility: each customer j>=1 has some vehicle; each vehicle serves some customer."""
     for j in range(1, n):
         if all(u[k][j] == 0.0 for k in range(m)):
             u[rng.randrange(m)][j] = 1.0
@@ -161,10 +153,6 @@ def load_instance(path: str) -> Instance:
 
 
 def build_all_default(root: str, prob_compat: float, seed_offset: int) -> None:
-    """
-    root: 'data' or 'data2'
-    seed_offset: separates tight vs relaxed runs
-    """
     n, m = 21, 6
     specs = [
         ("c-n21-k6", "C", 1000 + seed_offset),
@@ -186,11 +174,7 @@ def build_family(
     prob_compat: float,
     seed_offset: int,
 ) -> None:
-    """
-    Sinh 3 layout C/R/RC cho một cặp (n_customers, n_vehicles).
-    Tên theo paper style: c-nXX-kYY, r-nXX-kYY, RC-nXX-kYY.
-    """
-    n = n_customers + 1  # + depot
+    n = n_customers + 1
     specs = [
         (f"c-n{n_customers}-k{n_vehicles}", "C", 1000 + seed_offset),
         (f"r-n{n_customers}-k{n_vehicles}", "R", 2000 + seed_offset),
@@ -203,9 +187,6 @@ def build_family(
 
 
 def _parse_size_token(token: str) -> tuple[int, int]:
-    """
-    Parse "41:10" -> (41 customers, 10 vehicles).
-    """
     parts = token.split(":")
     if len(parts) != 2:
         raise ValueError(f"Invalid size token '{token}', expected n_customers:n_vehicles")

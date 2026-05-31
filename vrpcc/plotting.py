@@ -1,8 +1,3 @@
-"""
-Hình vẽ báo cáo (không logic giải).
-
-Cột/trục ưu tiên: thuật toán bài báo (approx); MIP là baseline so sánh.
-"""
 
 from __future__ import annotations
 
@@ -24,7 +19,6 @@ def plot_objective_time_bars(
     out_path: str | Path,
     title: str = "VRPCC: thuật toán bài báo (chính) vs MIP (so sánh)",
 ) -> None:
-    """Grouped bars: approx bên trái (ưu tiên), MIP bên phải (tham chiếu)."""
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     x = np.arange(len(labels))
@@ -55,7 +49,6 @@ def plot_approx_only_bars(
     out_path: str | Path,
     title: str = "VRPCC: thuật toán bài báo (chưa chạy MIP)",
 ) -> None:
-    """Chỉ thời gian + makespan của approx — dùng khi --skip-mip."""
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     x = np.arange(len(labels))
@@ -80,7 +73,6 @@ def plot_routes_map(
     out_path: str | Path,
     title: str = "Routes",
 ) -> None:
-    """Vẽ tuyến 2D nếu instance có coords."""
     if inst.coords is None:
         return
     out_path = Path(out_path)
@@ -110,7 +102,6 @@ def plot_from_results_list(
     *,
     include_mip: bool = True,
 ) -> None:
-    """results từ run_comparison; include_mip=False khi chỉ chạy thuật toán bài báo."""
     out_dir = Path(out_dir)
     labels = [str(r.get("name", "")) for r in results]
     if not include_mip:

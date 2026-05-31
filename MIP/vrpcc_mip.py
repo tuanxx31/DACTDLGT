@@ -16,8 +16,8 @@ class MIPReport:
     ub: float | None
     best_tau: float | None
     mip_gap: float | None
-    time_sec: float  # wall-clock toàn bộ solve_vrpcc (dựng mô hình + optimize)
-    gurobi_runtime: float  # chỉ lệnh optimize() — thuộc tính model.Runtime
+    time_sec: float
+    gurobi_runtime: float
     status: int
     nodes: int
 
@@ -164,21 +164,21 @@ def solve_vrpcc(
     tau = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name="tau")
     model.setObjective(tau, GRB.MINIMIZE)
 
-    # Makespan
+
     for k in range(m_veh):
         model.addConstr(
             gp.quicksum(c[i][j] * x[k, i, j] for (kk, i, j) in arcs if kk == k) <= tau,
             name=f"makespan_{k}",
         )
 
-    # Mỗi xe dùng tối đa 1 route
+
     for k in range(m_veh):
         out_depot = gp.quicksum(x[k, 0, j] for j in range(1, n) if (k, 0, j) in arc_set)
         in_depot = gp.quicksum(x[k, i, 0] for i in range(1, n) if (k, i, 0) in arc_set)
         model.addConstr(out_depot <= 1, name=f"depot_out_le1_{k}")
         model.addConstr(in_depot <= 1, name=f"depot_in_le1_{k}")
 
-    # Flow balance
+
     for k in range(m_veh):
         for v in range(n):
             inflow = gp.quicksum(
@@ -189,7 +189,7 @@ def solve_vrpcc(
             )
             model.addConstr(inflow == outflow, name=f"flow_{k}_{v}")
 
-    # Mỗi khách được thăm đúng 1 lần
+
     for j in range(1, n):
         model.addConstr(
             gp.quicksum(
@@ -244,7 +244,7 @@ def solve_vrpcc(
     best_tau = None
     if model.SolCount > 0:
         try:
-            # B (budget) va U (incumbent / UB): lay tu bien tau.X, khong dung ObjVal
+
             tx = tau.X
             ub = tx
             best_tau = tx

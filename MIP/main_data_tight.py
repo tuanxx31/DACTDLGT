@@ -1,6 +1,3 @@
-"""
-Chạy MIP trên bộ dữ liệu `data`: tương thích chặt (p = 0.3 theo bài báo).
-"""
 from __future__ import annotations
 
 import os
@@ -10,7 +7,7 @@ from instancegen import load_instance
 from vrpcc_mip import format_mip_summary, solve_vrpcc
 
 DATA_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_paper_101/tight")
-# DATA_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
 
 INSTANCES = ("c-n21-k6", "r-n21-k6")
 

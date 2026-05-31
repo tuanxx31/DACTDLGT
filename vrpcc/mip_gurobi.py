@@ -1,8 +1,3 @@
-"""
-MIP (1)-(8) Yu et al. — lazy subtour elimination (7).
-
-Vai trò: chuẩn tham chiếu (UB/LB, thời gian solver). Không phải đối tượng nghiên cứu chính.
-"""
 
 from __future__ import annotations
 
@@ -29,7 +24,6 @@ class MIPResult:
 
 
 def _extract_succ(vals: np.ndarray, k: int, n: int, tol: float = 0.5) -> dict[int, int]:
-    """One successor per i: argmax_j x[k,i,j] when row has positive mass (robust at MIPSOL)."""
     succ: dict[int, int] = {}
     for i in range(n):
         row = vals[k, i, :]
@@ -55,7 +49,6 @@ def _customers_served_by_vehicle(vals: np.ndarray, k: int, n: int, tol: float = 
 
 
 def _subtour_from(start: int, succ: dict[int, int]) -> list[int] | None:
-    """Follow succ from start until a repeat; return nodes of directed cycle (excluding closing)."""
     seen: dict[int, int] = {}
     order: list[int] = []
     cur = start
@@ -76,15 +69,11 @@ def _subtour_from(start: int, succ: dict[int, int]) -> list[int] | None:
 def _find_subtour_cut(
     vals: np.ndarray, k: int, n: int
 ) -> list[int] | None:
-    """
-    If vehicle k's solution has a directed cycle on V+ not containing depot in the tour from 0,
-    return subset S ⊂ V+ for SEC. Otherwise None.
-    """
     succ = _extract_succ(vals, k, n)
     tk = _customers_served_by_vehicle(vals, k, n)
     if not tk:
         return None
-    # Reachable from depot
+
     reachable: set[int] = set()
     stack = [0]
     while stack:
@@ -111,7 +100,7 @@ def _find_subtour_cut(
             return sorted(set(s))
         pair = _two_customer_cycle(vals, k, v0, n)
         return pair if pair else None
-    # All served customers reachable; verify single return to depot
+
     path: list[int] = []
     cur = 0
     visited_edges = 0
@@ -164,30 +153,30 @@ def solve_vrpcc_mip(
         name="x",
     )
 
-    # (6) compatibility + fix impossible arcs
+
     for kk in range(m):
         for ii in range(n):
             for jj in range(n):
                 if jj >= 1 and u[kk, jj] == 0:
                     x[kk, ii, jj].UB = 0.0
-                # forbid customer self-loops x[k,j,j] (otherwise tau=0 "fake" visits)
+
                 if ii == jj >= 1:
                     x[kk, ii, jj].UB = 0.0
 
     model.setObjective(tau, GRB.MINIMIZE)
 
-    # (2)
+
     for kk in range(m):
         model.addConstr(
             gp.quicksum(d[i, j] * x[kk, i, j] for i in range(n) for j in range(n)) <= tau,
             name=f"span_{kk}",
         )
 
-    # (3) each vehicle leaves depot once
+
     for kk in range(m):
         model.addConstr(gp.quicksum(x[kk, 0, j] for j in range(n)) == 1, name=f"leave_{kk}")
 
-    # (4) flow
+
     for kk in range(m):
         for v in range(n):
             model.addConstr(
@@ -196,7 +185,7 @@ def solve_vrpcc_mip(
                 name=f"flow_{kk}_{v}",
             )
 
-    # (5) each customer visited exactly once
+
     for j in range(1, n):
         model.addConstr(
             gp.quicksum(x[kk, i, j] for kk in range(m) for i in range(n)) == 1,

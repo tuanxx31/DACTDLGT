@@ -1,4 +1,3 @@
-"""Generate VRPCC instances: Solomon coords + random compatibility (paper: 30% / 70%)."""
 
 from __future__ import annotations
 
@@ -13,7 +12,6 @@ from vrpcc.instance import VRPCCInstance
 
 
 def _ensure_coverage(u: np.ndarray, n_nodes: int, m: int, rng: np.random.Generator) -> np.ndarray:
-    """Every customer j>=1 must have sum_k u[k,j] >= 1."""
     u = u.copy()
     for j in range(1, n_nodes):
         if u[:, j].sum() == 0:
@@ -25,12 +23,11 @@ def _ensure_coverage(u: np.ndarray, n_nodes: int, m: int, rng: np.random.Generat
 def random_compatibility(m: int, n_nodes: int, p: float, rng: np.random.Generator) -> np.ndarray:
     u = rng.random((m, n_nodes)) < p
     u = u.astype(np.int8)
-    u[:, 0] = 1  # depot
+    u[:, 0] = 1
     return _ensure_coverage(u, n_nodes, m, rng)
 
 
 def synthetic_coords(kind: str, n_customers: int, seed: int) -> np.ndarray:
-    """R / C / RC style 2D points (depot at center-ish)."""
     rng = np.random.default_rng(seed)
     n = n_customers + 1
     depot = np.array([[50.0, 50.0]])
@@ -74,7 +71,7 @@ def build_instance(
     rng = np.random.default_rng(seed)
     if solomon_path is not None:
         coords = sample_instance_coords(solomon_path, n_customers, seed=0, start_index=0)
-        # optional light shuffle of customers only (keep depot row 0)
+
         perm = np.arange(coords.shape[0])
         cperm = rng.permutation(n_customers) + 1
         perm[1:] = cperm
@@ -96,7 +93,7 @@ def build_instance(
     return VRPCCInstance(dist=dist, u=u, name=nm, metadata=meta, coords=coords)
 
 
-# Mặc định: vừa phải — mỗi instance ≥15 đỉnh (depot + khách); run_comparison vẫn khả thi.
+
 QUICK_SPECS: list[tuple[str, int, int, bool, int]] = [
     ("R", 15, 3, True, 1),
     ("R", 15, 3, False, 2),
@@ -104,7 +101,7 @@ QUICK_SPECS: list[tuple[str, int, int, bool, int]] = [
     ("RC", 14, 4, False, 4),
 ]
 
-# Bộ lớn gần bài báo (chạy lâu).
+
 FULL_SPECS: list[tuple[str, int, int, bool, int]] = [
     ("R", 10, 3, True, 1),
     ("R", 10, 3, False, 2),

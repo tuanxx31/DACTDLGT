@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-"""
-Chạy VRPCC từ file: sửa INSTANCE_JSON bên dưới, rồi: python vrpcc.py
-"""
+
 
 from __future__ import annotations
 
@@ -10,9 +7,9 @@ import sys
 import time
 from pathlib import Path
 
-# --- Chỉnh đường dẫn instance tại đây (tương đối gốc repo hoặc đường dẫn tuyệt đối) ---
+
 INSTANCE_JSON = "MIP/data_paper_101/tight/c-n21-k6/c-n21-k6.json"
-# Muốn chạy cả thư mục: đặt INSTANCE_JSON = None và chỉnh INSTANCE_DIR (hoặc để None = tight mặc định).
+
 INSTANCE_DIR: str | Path | None = None
 _DEFAULT_FALLBACK_DIR = Path("MIP") / "data_paper_101" / "tight"
 
@@ -25,26 +22,26 @@ ALGORITHM_TRACE = True
 LOG_FILE: Path | None = None
 VERBOSE = False
 
-# ---------------------------------------------------------------------------
+
 
 _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from app import (  # noqa: E402
+from app import (
     _collect_json_files_recursive,
     _print_result,
 )
-from vrpcc.approx_algorithm import algorithm_2_vrpcc  # noqa: E402
-from vrpcc.approx_observer import NULL_OBSERVER  # noqa: E402
-from vrpcc.approx_observer_logging import (  # noqa: E402
+from vrpcc.approx_algorithm import algorithm_2_vrpcc
+from vrpcc.approx_observer import NULL_OBSERVER
+from vrpcc.approx_observer_logging import (
     LoggingApproxObserver,
     configure_approx_trace_file,
 )
-from vrpcc.instance import VRPCCInstance  # noqa: E402
-from vrpcc.k_tsp_oracle import make_oracle  # noqa: E402
-from vrpcc.local_search import local_search  # noqa: E402
-from vrpcc.plotting import plot_approx_only_bars, plot_routes_map  # noqa: E402
+from vrpcc.instance import VRPCCInstance
+from vrpcc.k_tsp_oracle import make_oracle
+from vrpcc.local_search import local_search
+from vrpcc.plotting import plot_approx_only_bars, plot_routes_map
 
 
 def _resolve_path(p: str | Path) -> Path:

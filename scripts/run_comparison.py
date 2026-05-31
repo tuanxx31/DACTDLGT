@@ -1,11 +1,4 @@
-#!/usr/bin/env python3
-"""
-VRPCC: thuật toán bài báo (mục 3–4) + tuỳ chọn MIP so sánh.
 
-Mặc định gói nhanh (~≤2 phút với instance nhỏ trong vrpcc/data/instances): MIP 40s/instance, không chạy MIP lần 2.
---skip-mip: chỉ approx (+ local search), không Gurobi (vài giây).
---mip-limit-1 / --mip-limit-2: tăng khi cần thử nghiệm giống bài báo.
-"""
 
 from __future__ import annotations
 
@@ -16,7 +9,7 @@ import sys
 import time
 from pathlib import Path
 
-# repo root on path
+
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -34,7 +27,6 @@ from vrpcc.plotting import plot_from_results_list, plot_routes_map
 
 
 def _collect_json_files_recursive(root_dir: Path) -> list[Path]:
-    """Lấy toàn bộ JSON trong thư mục (đệ quy), bỏ qua manifest."""
     if not root_dir.is_dir():
         return []
     return sorted(
@@ -59,10 +51,6 @@ def _fmt_csv_num(x: float | None) -> str:
 
 
 def _collect_default_light_instances(root: Path) -> list[Path]:
-    """
-    Mặc định test nhanh nhóm nhẹ nhất trong paper: *-n21-k6.
-    Ưu tiên thư mục MIP/data, fallback về vrpcc/data/instances.
-    """
     candidates = _collect_json_files_recursive(root / "MIP" / "data")
     light = [p for p in candidates if "n21-k6" in p.stem.lower()]
     if light:
@@ -107,9 +95,6 @@ def _write_comparison_csv(rows: list[dict], out_csv: Path) -> None:
 
 
 def _flush_incremental_outputs(out_dir: Path, rows: list[dict]) -> None:
-    """
-    Ghi ket qua trung gian sau moi instance de co CSV/JSON ngay lap tuc.
-    """
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
     csv_path = out_dir / "comparison_table.csv"
@@ -121,16 +106,11 @@ def _solve_mip_report_from_mip_module(
     time_limit_sec: float,
     verbose: bool,
 ) -> tuple[str, float | None, float | None, float]:
-    """
-    Dùng solver MIP gốc trong thư mục MIP (sparse arcs) để giảm kích thước model
-    so với solver vrpcc/mip_gurobi.py.
-    Trả về: (status, lb, ub, time_sec).
-    """
     mip_dir = _ROOT / "MIP"
     if str(mip_dir) not in sys.path:
         sys.path.insert(0, str(mip_dir))
-    from instancegen import load_instance  # type: ignore
-    from vrpcc_mip import solve_vrpcc  # type: ignore
+    from instancegen import load_instance
+    from vrpcc_mip import solve_vrpcc
 
     inst_mip = load_instance(str(instance_path))
     rep = solve_vrpcc(inst_mip, time_limit=float(time_limit_sec), verbose=bool(verbose))
@@ -139,7 +119,7 @@ def _solve_mip_report_from_mip_module(
 
 def _status_name_mip_report(status_code: int) -> str:
     try:
-        import gurobipy as gp  # type: ignore
+        import gurobipy as gp
     except Exception:
         return str(status_code)
     names = {
@@ -367,7 +347,7 @@ def main() -> None:
                 "file": str(p),
                 "B": B,
                 "mip_skipped": True,
-                # Backward compatibility for plotting utility
+
                 "approx_obj": approx_obj,
                 "approx_time": approx_time,
             }
@@ -383,8 +363,8 @@ def main() -> None:
                 )
             continue
 
-        # Ưu tiên solver MIP trong thư mục MIP để khớp benchmark paper và tránh model quá lớn.
-        # Nếu một instance vượt license giới hạn kích thước, giữ batch chạy tiếp.
+
+
         status1 = "SKIPPED"
         status2 = "SKIPPED"
         mip_bound_1 = None
@@ -410,7 +390,7 @@ def main() -> None:
                     time_limit_sec=float(args.mip_limit_2),
                     verbose=bool(args.verbose_mip),
                 )
-        except Exception as exc:  # keep robust batch export
+        except Exception as exc:
             mip_error = str(exc)
             status1 = "MIP_ERROR"
             status2 = "MIP_ERROR"
@@ -436,7 +416,7 @@ def main() -> None:
             "mip_status_1": status1,
             "mip_status_2": status2,
             "mip_error": mip_error,
-            # Backward compatibility for plotting utility
+
             "approx_obj": approx_obj,
             "approx_time": approx_time,
             "mip_time": mip_time_1,

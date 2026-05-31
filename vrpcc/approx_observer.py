@@ -1,17 +1,10 @@
-"""
-Giao diện quan sát (hooks) cho Algorithm 1–2: mặc định không làm gì.
-
-Triển khai ghi log nằm ở `vrpcc.approx_observer_logging` để tách khỏi lõi thuật toán.
-"""
 
 from __future__ import annotations
 
 
 class ApproxObserver:
-    """Các hook gọi từ `approx_algorithm`; override để trace / log / debug."""
 
     def on_run_start(self, instance_name: str) -> None:
-        """Một lần trước khi chạy Algorithm 2 (ví dụ banner instance)."""
         pass
 
     def binary_search_init(
@@ -65,5 +58,5 @@ class ApproxObserver:
         pass
 
 
-# Mặc định dùng chung (stateless) cho tham số observer.
+
 NULL_OBSERVER = ApproxObserver()

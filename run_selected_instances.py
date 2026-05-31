@@ -1,12 +1,4 @@
-#!/usr/bin/env python3
-"""
-Chay rieng thuat toan xap xi cho danh sach instance co dinh.
 
-Sua INSTANCE_PATHS ben duoi, roi chay:
-    .venv/bin/python run_selected_instances.py
-
-Khong can truyen --instance / --instance-dir tren terminal.
-"""
 
 from __future__ import annotations
 
@@ -32,16 +24,16 @@ from vrpcc.local_search import local_search
 from vrpcc.plotting import plot_approx_only_bars, plot_routes_map
 
 
-# Danh sach instance can chay. Duong dan tu root repo.
+
 INSTANCE_PATHS = [
     "MIP/data_paper_101/tight/c-n21-k6/c-n21-k6.json",
     "MIP/data_paper_101/tight/r-n21-k6/r-n21-k6.json",
     "MIP/data_paper_101/tight/RC-n21-k6/RC-n21-k6.json",
 ]
 
-# Co the them thu muc neu muon quet toan bo JSON trong thu muc do.
+
 INSTANCE_DIRS: list[str] = [
-    # "MIP/data_paper_101/relaxed",
+
 ]
 
 OUT_DIR = Path("output_selected_instances")

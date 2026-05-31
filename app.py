@@ -1,12 +1,4 @@
-#!/usr/bin/env python3
-"""
-VRPCC — Approximation Algorithm (Yu, Nagarajan, Shen 2018).
 
-Chạy Algorithm 2 (binary search trên B) + Algorithm 1 (MCG-VRP greedy)
-với oracle k-TSP bicriteria (β = 5). Tuỳ chọn local search (2-opt + relocation).
-
-In chi tiết: cận trên, cận dưới, B tốt nhất, makespan, chi phí từng xe, thời gian.
-"""
 
 from __future__ import annotations
 
@@ -18,7 +10,7 @@ import time
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent
-# Khi không truyền --instance / --instance-dir: chỉ bộ ràng buộc chặt (tight), ≈ …/MIP/data_paper_101/tight.
+
 _DEFAULT_INSTANCE_DIR = _ROOT / "MIP" / "data_paper_101" / "tight"
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -38,7 +30,6 @@ SEP = "=" * 64
 
 
 def _collect_json_files_recursive(root_dir: Path) -> list[Path]:
-    """Lấy toàn bộ JSON trong thư mục (đệ quy), bỏ qua manifest."""
     if not root_dir.is_dir():
         return []
     return sorted(

@@ -1,8 +1,3 @@
-"""
-Quan sát Algorithm 1–2 và ghi log (tiếng Việt) — tách khỏi `approx_algorithm`.
-
-Logger tên cố định `vrpcc.approx_trace`: chỉ ghi file khi gọi `configure_approx_trace_file`.
-"""
 
 from __future__ import annotations
 
@@ -11,7 +6,7 @@ from pathlib import Path
 
 from vrpcc.approx_observer import ApproxObserver
 
-# Logger riêng để không lẫn với thư viện khác; handler gắn qua configure_approx_trace_file.
+
 LOGGER_NAME = "vrpcc.approx_trace"
 _log = logging.getLogger(LOGGER_NAME)
 
@@ -21,15 +16,6 @@ def configure_approx_trace_file(
     *,
     mode: str = "w",
 ) -> Path:
-    """
-    Gắn một FileHandler UTF-8 cho trace thuật toán (chỉ logger này, không propagate).
-
-    Tham số:
-        path: file log (thư mục cha được tạo nếu cần).
-        mode: 'w' ghi mới mỗi lần chạy; 'a' nối thêm.
-
-    Trả về: path đã resolve.
-    """
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     lg = logging.getLogger(LOGGER_NAME)
@@ -54,7 +40,6 @@ def _sep() -> None:
 
 
 class LoggingApproxObserver(ApproxObserver):
-    """Ghi log chi tiết nhị phân B, lượt tham lam, Algorithm 1 (định dạng từng khối)."""
 
     def on_run_start(self, instance_name: str) -> None:
         _sep()
