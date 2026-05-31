@@ -23,6 +23,337 @@ Bài toán đang xử lý là VRPCC, tức bài toán định tuyến xe có rà
 - `beta` là hệ số xấp xỉ của oracle k-TSP.
 - `eps` là độ chính xác dừng của tìm kiếm nhị phân.
 
+### 1.1. Dữ liệu đầu vào trong `MIP/data_paper_101`
+
+Thư mục input đang dùng là:
+
+```text
+MIP/data_paper_101
+```
+
+Đây là bộ dữ liệu kiểu bài báo, được tạo từ Solomon benchmark và thêm ma trận tương thích giữa xe và khách hàng.
+
+Cấu trúc thư mục:
+
+```text
+MIP/data_paper_101/
+├── manifest.csv
+├── manifest.json
+├── tight/
+│   ├── c-n21-k6/c-n21-k6.json
+│   ├── r-n21-k6/r-n21-k6.json
+│   ├── RC-n21-k6/RC-n21-k6.json
+│   └── ...
+└── relaxed/
+    ├── c-n21-k6/c-n21-k6.json
+    ├── r-n21-k6/r-n21-k6.json
+    ├── RC-n21-k6/RC-n21-k6.json
+    └── ...
+```
+
+Ý nghĩa hai thư mục chính:
+
+| Thư mục | Xác suất tương thích | Ý nghĩa |
+|---|---:|---|
+| `tight` | `0.3` | Ràng buộc chặt hơn, mỗi khách thường tương thích với ít xe hơn. |
+| `relaxed` | `0.7` | Ràng buộc lỏng hơn, mỗi khách thường tương thích với nhiều xe hơn. |
+
+Trong mỗi mức `tight` hoặc `relaxed` có 15 instance:
+
+| Nhóm layout | Ý nghĩa | Các kích thước |
+|---|---|---|
+| `c` | Clustered, khách hàng phân cụm. | `n21-k6`, `n41-k10`, `n61-k14`, `n81-k18`, `n101-k22` |
+| `r` | Random, khách hàng phân bố ngẫu nhiên. | `n21-k6`, `n41-k10`, `n61-k14`, `n81-k18`, `n101-k22` |
+| `RC` | Vừa random vừa clustered. | `n21-k6`, `n41-k10`, `n61-k14`, `n81-k18`, `n101-k22` |
+
+Tên instance có dạng:
+
+```text
+c-n21-k6
+```
+
+Đọc như sau:
+
+- `c`: loại layout, ở đây là clustered.
+- `n21`: tổng số đỉnh là `21`, gồm 1 depot và 20 khách hàng.
+- `k6`: số xe là `6`.
+
+Vì vậy:
+
+| Tên | Tổng số đỉnh | Số khách hàng | Số xe |
+|---|---:|---:|---:|
+| `n21-k6` | 21 | 20 | 6 |
+| `n41-k10` | 41 | 40 | 10 |
+| `n61-k14` | 61 | 60 | 14 |
+| `n81-k18` | 81 | 80 | 18 |
+| `n101-k22` | 101 | 100 | 22 |
+
+### 1.2. File `manifest.csv` và `manifest.json`
+
+Hai file `manifest` là bảng mô tả toàn bộ input trong thư mục.
+
+Các cột quan trọng:
+
+| Cột | Ý nghĩa |
+|---|---|
+| `suite` | Tên bộ dữ liệu, ở đây là `up_to_101`. |
+| `level` | Mức tương thích: `tight` hoặc `relaxed`. |
+| `instance_name` | Tên instance, ví dụ `c-n21-k6`. |
+| `n_nodes` | Tổng số đỉnh, gồm depot. |
+| `m_vehicles` | Số xe. |
+| `layout` | Kiểu phân bố tọa độ: `C`, `R`, hoặc `RC`. |
+| `compat_prob` | Xác suất sinh tương thích giữa xe và khách. |
+| `seed` | Seed dùng để sinh ma trận tương thích. |
+| `source_file` | File Solomon gốc, ví dụ `c101.txt`. |
+| `source_path` | Đường dẫn file Solomon gốc. |
+| `output_path` | Đường dẫn file JSON instance được tạo ra. |
+
+Ví dụ một dòng trong `manifest.csv`:
+
+```text
+up_to_101,tight,c-n21-k6,21,6,C,0.3,1313,25,c101.txt,raw_data/solomon/25/c101.txt,MIP/data_paper_101/tight/c-n21-k6/c-n21-k6.json
+```
+
+Giải thích dòng này:
+
+- Instance thuộc bộ `up_to_101`.
+- Mức tương thích là `tight`.
+- Tên instance là `c-n21-k6`.
+- Có `21` đỉnh, tức 1 depot và 20 khách.
+- Có `6` xe.
+- Layout là `C`, tức clustered.
+- Xác suất tương thích là `0.3`.
+- Seed sinh dữ liệu là `1313`.
+- Tọa độ lấy từ file Solomon `c101.txt`.
+- File JSON đầu ra nằm ở `MIP/data_paper_101/tight/c-n21-k6/c-n21-k6.json`.
+
+### 1.3. Cấu trúc một file JSON input
+
+Ví dụ file:
+
+```text
+MIP/data_paper_101/tight/c-n21-k6/c-n21-k6.json
+```
+
+Các khóa chính trong JSON:
+
+| Trường | Kiểu dữ liệu | Ý nghĩa |
+|---|---|---|
+| `name` | chuỗi | Tên instance. |
+| `n` | số nguyên | Tổng số đỉnh, gồm depot. |
+| `m` | số nguyên | Số xe. |
+| `prob_compat` | số thực | Xác suất sinh tương thích. |
+| `layout` | chuỗi | Kiểu phân bố tọa độ: `C`, `R`, hoặc `RC`. |
+| `coords` | ma trận `n x 2` | Tọa độ 2D của depot và khách hàng. |
+| `c` | ma trận `n x n` | Ma trận chi phí/khoảng cách giữa các đỉnh. |
+| `u` | ma trận `m x n` | Ma trận tương thích xe-khách. |
+
+Đoạn JSON mẫu có chú thích:
+
+```jsonc
+{
+  "name": "c-n21-k6",       // Tên instance.
+  "n": 21,                  // Tổng số đỉnh: 1 depot + 20 khách hàng.
+  "m": 6,                   // Số xe.
+  "prob_compat": 0.3,       // Xác suất sinh tương thích, tight dùng 0.3.
+  "layout": "C",            // C nghĩa là clustered, khách hàng phân cụm.
+  "coords": [               // Danh sách tọa độ của các đỉnh.
+    [40.0, 50.0],           // Đỉnh 0 là depot.
+    [45.0, 68.0],           // Đỉnh 1 là khách hàng 1.
+    [45.0, 70.0]            // Đỉnh 2 là khách hàng 2.
+  ],
+  "c": [                    // Ma trận khoảng cách n x n.
+    [0.0, 18.68, 20.61],    // Hàng 0: khoảng cách từ depot đến các đỉnh khác.
+    [18.68, 0.0, 2.0],      // Hàng 1: khoảng cách từ khách 1 đến các đỉnh khác.
+    [20.61, 2.0, 0.0]       // Hàng 2: khoảng cách từ khách 2 đến các đỉnh khác.
+  ],
+  "u": [                    // Ma trận tương thích m x n.
+    [1.0, 0.0, 0.0],        // Xe 0: được phép đi depot, chưa chắc phục vụ khách 1, 2.
+    [1.0, 0.0, 0.0],        // Xe 1: depot luôn bằng 1.
+    [1.0, 1.0, 0.0]         // Xe 2: được phép phục vụ khách 1, không phục vụ khách 2.
+  ]
+}
+```
+
+Lưu ý: đoạn trên là bản rút gọn để giải thích. File thật có đủ `21` dòng tọa độ, ma trận `c` kích thước `21 x 21`, và ma trận `u` kích thước `6 x 21`.
+
+### 1.4. Ý nghĩa chi tiết của `coords`, `c`, `u`
+
+`coords`:
+
+- Là tọa độ 2D của các đỉnh.
+- `coords[0]` là tọa độ depot.
+- `coords[j]` với `j >= 1` là tọa độ khách hàng `j`.
+- Thuật toán xấp xỉ không bắt buộc dùng `coords` để tính nghiệm.
+- `coords` chủ yếu dùng để vẽ hình tuyến đường.
+
+`c`:
+
+- Là ma trận chi phí hoặc khoảng cách.
+- `c[i][j]` là chi phí đi từ đỉnh `i` sang đỉnh `j`.
+- Ma trận này đối xứng, tức `c[i][j] = c[j][i]`.
+- Đường chéo chính bằng `0`, tức `c[i][i] = 0`.
+- Code đọc trường này thành `inst.dist`.
+- Nếu JSON dùng tên `dist` thay vì `c` thì code cũng đọc được.
+
+`u`:
+
+- Là ma trận tương thích giữa xe và đỉnh.
+- `u[k][j] = 1` nghĩa là xe `k` được phép phục vụ đỉnh `j`.
+- `u[k][j] = 0` nghĩa là xe `k` không được phép phục vụ đỉnh `j`.
+- Cột `j = 0` là depot, nên thường `u[k][0] = 1` với mọi xe `k`.
+- Với mỗi khách hàng `j >= 1`, dữ liệu bảo đảm có ít nhất một xe tương thích để bài toán có khả năng có nghiệm.
+
+Ví dụ đọc một hàng của `u`:
+
+```text
+u[0] = [1, 0, 0, 0, 1, 1, ...]
+```
+
+Nghĩa là:
+
+- Xe `0` được phép đi depot vì `u[0][0] = 1`.
+- Xe `0` không được phục vụ khách `1`, `2`, `3`.
+- Xe `0` được phục vụ khách `4`, `5`.
+
+### 1.5. Input đi vào thuật toán như thế nào?
+
+Khi chạy chương trình, file JSON được đọc bằng:
+
+```python
+inst = VRPCCInstance.load_json(p)  # Đọc file JSON từ đường dẫn p.
+```
+
+Sau đó `VRPCCInstance.from_dict` xử lý dữ liệu:
+
+```python
+dist_key = "dist" if "dist" in d else "c"  # Nếu JSON có dist thì dùng dist, nếu không thì dùng c.
+dist_raw = np.array(d[dist_key], dtype=np.float64)  # Chuyển ma trận khoảng cách sang numpy.
+u_raw = np.array(d["u"], dtype=np.int8)  # Chuyển ma trận tương thích sang numpy.
+```
+
+Các kiểm tra dữ liệu quan trọng trong `__post_init__`:
+
+```python
+self.dist = np.asarray(self.dist, dtype=np.float64)  # Ép ma trận khoảng cách về số thực.
+self.u = np.asarray(self.u, dtype=np.int8)  # Ép ma trận tương thích về số nguyên 0/1.
+n_nodes = self.dist.shape[0]  # Lấy số đỉnh từ số hàng của ma trận khoảng cách.
+if self.dist.shape[1] != n_nodes:  # Kiểm tra ma trận khoảng cách có vuông không.
+    raise ValueError("dist must be square")  # Nếu không vuông thì input sai.
+if self.u.shape[1] != n_nodes:  # Kiểm tra số cột của u có khớp số đỉnh không.
+    raise ValueError("u second dim must match n_nodes")  # Nếu không khớp thì input sai.
+if np.any(self.dist < 0):  # Kiểm tra khoảng cách âm.
+    raise ValueError("dist must be non-negative")  # Khoảng cách âm không hợp lệ.
+if not np.allclose(self.dist, self.dist.T, atol=1e-9):  # Kiểm tra ma trận có đối xứng không.
+    raise ValueError("dist must be symmetric")  # Nếu không đối xứng thì input sai.
+```
+
+Sau khi đọc xong, các trường input được thuật toán dùng như sau:
+
+| Dữ liệu input | Trong code | Dùng ở đâu |
+|---|---|---|
+| `n` hoặc kích thước `c` | `inst.n_nodes` | Biết tổng số đỉnh. |
+| `n - 1` | `inst.n_customers` | Biết số khách hàng. |
+| `m` hoặc số hàng của `u` | `inst.m` | Biết số xe. |
+| `c` | `inst.dist` | Tính chi phí tour, tính cận trên ban đầu. |
+| `u` | `inst.u` | Kiểm tra xe nào được phục vụ khách nào. |
+| `coords` | `inst.coords` | Vẽ hình tuyến đường, không quyết định logic thuật toán. |
+
+Cụ thể trong Algorithm 2:
+
+```python
+n_cust = inst.n_customers  # Lấy số khách hàng từ input.
+x_full = set(inst.customer_indices())  # Tạo tập khách {1, 2, ..., n - 1}.
+sum_e = inst.sum_all_edge_costs()  # Cộng tất cả cạnh trong ma trận c để tạo cận trên ban đầu.
+upper = 2.0 * sum_e  # Cận trên ban đầu của tìm kiếm nhị phân.
+```
+
+Cụ thể trong Algorithm 1:
+
+```python
+vi = {j for j in range(1, n) if inst.u[veh, j] == 1}  # Lọc khách mà xe veh được phép phục vụ.
+y = x_prime & vi  # Chỉ đưa khách tương thích và chưa phục vụ vào oracle.
+```
+
+Cụ thể trong oracle:
+
+```python
+W = sorted(j for j in Y if j >= 1 and inst.u[vehicle, j] == 1)  # Lọc khách hợp lệ cho xe.
+c = _closed_tour_cost(inst, vehicle, t)  # Tính chi phí tour bằng ma trận c/dist.
+```
+
+### 1.6. Dữ liệu được sinh ra như thế nào?
+
+File `MIP/instancegen_paper.py` là script tạo bộ input này.
+
+Quy trình sinh dữ liệu:
+
+1. Đọc tọa độ từ Solomon benchmark, ví dụ `c101.txt`, `r101.txt`, `rc101.txt`.
+2. Lấy prefix các node cần dùng, ví dụ `0..20` cho `n21`.
+3. Tính ma trận khoảng cách Euclidean giữa mọi cặp điểm.
+4. Sinh ma trận tương thích `u` bằng xác suất `p`.
+5. Nếu một khách không tương thích với xe nào, script ép ngẫu nhiên một xe được phục vụ khách đó.
+6. Ghi ra file JSON và ghi thông tin vào `manifest.csv`, `manifest.json`.
+
+Code sinh ma trận khoảng cách:
+
+```python
+d = math.hypot(xi - xj, yi - yj)  # Tính khoảng cách Euclidean giữa hai tọa độ.
+dij = max(1.0, d)  # Bảo đảm khoảng cách khác nhau tối thiểu là 1.0.
+c[i][j] = dij  # Gán khoảng cách i -> j.
+c[j][i] = dij  # Gán khoảng cách j -> i để ma trận đối xứng.
+```
+
+Code sinh tương thích:
+
+```python
+u = [[0.0] * n for _ in range(m)]  # Tạo ma trận m x n ban đầu toàn 0.
+for k in range(m):  # Duyệt từng xe.
+    u[k][0] = 1.0  # Mọi xe đều được phép đi depot.
+for j in range(1, n):  # Duyệt từng khách hàng.
+    compatible = []  # Danh sách xe tương thích với khách j.
+    for k in range(m):  # Duyệt từng xe.
+        if rng.random() < p:  # Sinh ngẫu nhiên theo xác suất p.
+            u[k][j] = 1.0  # Đánh dấu xe k phục vụ được khách j.
+            compatible.append(k)  # Ghi nhận xe k tương thích.
+    if not compatible:  # Nếu không có xe nào phục vụ được khách j.
+        u[rng.randrange(m)][j] = 1.0  # Ép một xe ngẫu nhiên phục vụ được khách j.
+```
+
+### 1.7. Chạy thuật toán với input này
+
+Chạy các instance mặc định trong `run_selected_instances.py`:
+
+```bash
+.venv/bin/python run_selected_instances.py
+```
+
+Chạy toàn bộ thư mục `tight` bằng `app.py`:
+
+```bash
+.venv/bin/python app.py --instance-dir MIP/data_paper_101/tight --out-dir output_runs_tight
+```
+
+Chạy toàn bộ thư mục `relaxed` bằng `app.py`:
+
+```bash
+.venv/bin/python app.py --instance-dir MIP/data_paper_101/relaxed --out-dir output_runs_relaxed
+```
+
+Chạy một file cụ thể:
+
+```bash
+.venv/bin/python app.py --instance MIP/data_paper_101/tight/c-n21-k6/c-n21-k6.json --out-dir output_one
+```
+
+Khi báo cáo, nên nói rõ:
+
+- Input không phải chỉ là tọa độ.
+- Input chính gồm ma trận khoảng cách `c` và ma trận tương thích `u`.
+- Tọa độ `coords` dùng để vẽ hình và để sinh ra `c`.
+- Thuật toán quyết định route dựa trên `c` và `u`.
+- `tight` và `relaxed` khác nhau ở độ chặt của ma trận tương thích, không khác ở thuật toán.
+
 ## 2. Luồng chạy tổng quát
 
 ```mermaid
