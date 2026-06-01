@@ -89,10 +89,10 @@ def _greedy_min_increment_tour(
                 continue
             c_cur_j = float(d[cur, j])
             c_j0 = float(d[j, 0])
-            c_cur0 = float(d[cur, 0])
             closed = path_cost + c_cur_j + c_j0
             if closed > threshold:
                 continue
+            c_cur0 = float(d[cur, 0])
             delta = c_cur_j + c_j0 - c_cur0
             if delta < best_delta:
                 best_delta = delta
@@ -140,9 +140,6 @@ def _two_opt(inst: VRPCCInstance, vehicle: int, tour: Tour) -> Tour:
 
 
 
-
-
-
 def oracle_k_tsp(
     inst: VRPCCInstance,
     Y: set[int],
@@ -156,17 +153,6 @@ def oracle_k_tsp(
         return [0, 0], set()
 
     threshold = beta * budget
-
-
-    if len(W) <= EXACT_THRESHOLD:
-        for k in range(len(W), 0, -1):
-            t, c = _exact_k_subset(inst, vehicle, W, k)
-            t = _two_opt(inst, vehicle, t)
-            c = _closed_tour_cost(inst, vehicle, t)
-            if c <= threshold:
-                return _close_tour(t), set(t) - {0}
-        return [0, 0], set()
-
 
     tour = _greedy_min_increment_tour(inst, vehicle, W, threshold)
     tour = _two_opt(inst, vehicle, tour)

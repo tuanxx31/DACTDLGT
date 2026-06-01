@@ -102,7 +102,6 @@ def algorithm_2_vrpcc(
     n_cust = inst.n_customers
     x_full = set(inst.customer_indices())
 
-
     sum_e = inst.sum_all_edge_costs()
     upper = 2.0 * sum_e
     lower = 0.0
@@ -114,7 +113,6 @@ def algorithm_2_vrpcc(
     observer.binary_search_init(sum_edge_costs=sum_e, upper_init=upper, eps=eps)
 
     bin_step = 0
-
 
     while upper - lower >= eps:
         bin_step += 1
@@ -133,11 +131,7 @@ def algorithm_2_vrpcc(
             nx = len(x)
             need = nx / 2.0
             observer.greedy_wave_start(wave=wave, n_x=nx, need_half=need)
-
-
             a, covered = algorithm_1_mcg_vrp(inst, x, b, oracle, observer=observer)
-
-
             if len(covered) < need:
                 observer.greedy_wave_fail(b=b, n_covered=len(covered), need_half=need)
                 solve = False
@@ -148,7 +142,6 @@ def algorithm_2_vrpcc(
                 n_covered=len(covered),
                 x_remaining=nx - len(covered),
             )
-
 
             x -= covered
             for veh in range(inst.m):
