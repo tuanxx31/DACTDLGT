@@ -50,22 +50,6 @@ def _concat_depot_tours(a: list[int], b: list[int]) -> list[int]:
         slim.append(v)
     return slim
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def algorithm_1_mcg_vrp(
     inst: VRPCCInstance,
     X: set[int],
@@ -104,26 +88,6 @@ def algorithm_1_mcg_vrp(
     covered = x_init - x_prime
     observer.algo1_done(covered=covered, n_covered=len(covered))
     return routes, covered
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def algorithm_2_vrpcc(
     inst: VRPCCInstance,
@@ -174,7 +138,7 @@ def algorithm_2_vrpcc(
             a, covered = algorithm_1_mcg_vrp(inst, x, b, oracle, observer=observer)
 
 
-            if len(covered) < need - 1e-9:
+            if len(covered) < need:
                 observer.greedy_wave_fail(b=b, n_covered=len(covered), need_half=need)
                 solve = False
                 break

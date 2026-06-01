@@ -13,8 +13,8 @@
     "approx_ratio_bound": 25.024999999999995,
     "makespan_algo2": 216.93060572056424,
     "makespan_final": 138.2159311039465,
-    "time_algo2": 0.08847170900116907,
-    "time_total": 0.08867591599846492,
+    "time_algo2": 0.08542195900372462,
+    "time_total": 0.08565366699622246,
     "local_search": true
   },
   {
@@ -31,8 +31,8 @@
     "approx_ratio_bound": 25.024999999999995,
     "makespan_algo2": 223.5228895266391,
     "makespan_final": 135.95241580617238,
-    "time_algo2": 4.052089541000896,
-    "time_total": 4.05259316700176,
+    "time_algo2": 3.8870965000023716,
+    "time_total": 3.887586625001859,
     "local_search": true
   },
   {
@@ -49,8 +49,8 @@
     "approx_ratio_bound": 25.024999999999995,
     "makespan_algo2": 233.07938189998836,
     "makespan_final": 170.05721737189933,
-    "time_algo2": 0.3846217919999617,
-    "time_total": 0.3854561250009283,
+    "time_algo2": 0.3815110409996123,
+    "time_total": 0.3823487500048941,
     "local_search": true
   }
 ]
