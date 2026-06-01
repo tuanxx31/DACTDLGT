@@ -91,10 +91,10 @@ def _greedy_min_increment_tour(
             c_j0 = float(d[j, 0])
             c_cur0 = float(d[cur, 0])
             closed = path_cost + c_cur_j + c_j0
-            if closed > threshold + 1e-9:
+            if closed > threshold:
                 continue
             delta = c_cur_j + c_j0 - c_cur0
-            if delta < best_delta - 1e-12:
+            if delta < best_delta:
                 best_delta = delta
                 best_j = j
 
@@ -155,7 +155,7 @@ def oracle_k_tsp(
     if not W or budget <= 0:
         return [0, 0], set()
 
-    threshold = beta * budget + 1e-9
+    threshold = beta * budget
 
 
     if len(W) <= EXACT_THRESHOLD:
